@@ -29,7 +29,7 @@ target_link_libraries(${PROJECT_NAME}
     Qt6::Widgets 
     Qt6::Concurrent
     Qt6::StateMachine 
-    digiscope-api::fw-settings-wrapper
+    digiscope-api::digitizer-wrapper
 )
 
 install(TARGETS ${PROJECT_NAME}

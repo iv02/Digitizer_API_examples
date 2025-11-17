@@ -2,73 +2,31 @@
 
 #include <QMainWindow>
 
-class QTextEdit;
-class QPushButton;
-class QMenu;
-class QObject;
-class QStandardItemModel;
-class QTableView;
-class QGroupBox;
-
 namespace digi
 {
 class DigitizerInteractor;
 }
 
+class DeviceControlPanel;
+class SettingsPanel;
+
 class MainWindow : public QMainWindow
 {
-  Q_OBJECT
+    Q_OBJECT
 
   public:
-	MainWindow(QWidget *parent = nullptr);
-	~MainWindow() override;
-
-  signals:
-    void DiscoverDevices();
-    void connectDevice(int64_t id);
-    void downloadSettings(int64_t id);
-    void uploadSettings(int64_t id);
-    void deviceSettingList(int64_t id);
+    MainWindow(QWidget *parent = nullptr);
+    ~MainWindow() override;
 
   private slots:
-    void onDiscoverDevices();
-    void onShowLeftPanel(bool chacked = false, QPushButton *sender = nullptr);
-    void createFWSettingListMenu();
+    void onDeviceSelectionChanged(int64_t deviceId);
 
   private:
-    int64_t idCurrentDevice() const noexcept;
     void setupUi();
-    QWidget *setupLeftPanelUi();
-    QWidget *setupRightPanelUi();
+    void setupConnections();
     void setStyle();
-    void setConnect();
 
-    void appendText(QTextEdit *edit, const QString &text, int percent);
-
-	digi::DigitizerInteractor *m_digitizerInteractor;
-
-    QTextEdit *m_edit;
-    QTextEdit *m_editSV;
-    QMenu *m_menuFWSettingList;
-
-    QMap<int64_t, QList<QString>> m_devices;
-    QStandardItemModel *m_devicesModel;
-    QTableView *m_devicesTable;
-    QTableView *m_dhsfTable;
-    QGroupBox *m_settingsGroup;
-
-    QPushButton *m_pbDiscoverDevices;
-    QPushButton *m_pbConnectDevice;
-    QPushButton *m_pbDisConnectDevice;
-    QPushButton *m_pbDownloadSettings;
-    QPushButton *m_pbUploadSettings;
-    QPushButton *m_pbDeviceSettingList;
-    QPushButton *m_pbFwSettings;
-    QPushButton *m_pbSetSettings;
-
-    QPushButton *m_pbSettings;
-    QPushButton *m_pbDeviceSettings;
-    QPushButton *m_pbPHASettings; 
-    QPushButton *m_pbPSDSettings;
-    QPushButton *m_pbWAVESettings;
+    digi::DigitizerInteractor *m_digitizerInteractor;
+    DeviceControlPanel *m_deviceControlPanel;
+    SettingsPanel *m_settingsPanel;
 };
