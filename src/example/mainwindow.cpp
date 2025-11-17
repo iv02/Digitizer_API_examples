@@ -1,6 +1,6 @@
 ﻿
 #include "mainwindow.h"
-#include "fwsettingswrapper.h"
+#include "digitizerinteractor.h"
 
 #include <QHeaderView>
 #include <QJsonDocument>
@@ -14,7 +14,7 @@
 #include <QTextEdit>
 #include <QVBoxLayout>
 
-using namespace fwsr;
+using namespace digi;
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
@@ -25,7 +25,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
 MainWindow::~MainWindow()
 {
-    delete m_fwSettingsWrapper;
+    delete m_digitizerInteractor;
     delete m_devicesModel;
 }
 
@@ -34,7 +34,7 @@ void MainWindow::setupUi()
     setWindowTitle("Test fw-settings-wrapper");
     setMinimumSize(1000, 800);
 
-    m_fwSettingsWrapper = new fwsr::FwSettingsWrapper();
+    m_digitizerInteractor = new digi::DigitizerInteractor();
 
     auto splitter = new QSplitter(Qt::Horizontal);
     splitter->addWidget(setupLeftPanelUi());
@@ -50,7 +50,7 @@ QWidget *MainWindow::setupLeftPanelUi()
 {
     m_devicesModel = new QStandardItemModel(this);
 
-    auto headerLabels = m_fwSettingsWrapper->deviceHeaderLabels();
+    auto headerLabels = m_digitizerInteractor->deviceHeaderLabels();
     m_devicesModel->setColumnCount(static_cast<int>(headerLabels.size()));
     m_devicesModel->setHorizontalHeaderLabels(headerLabels);
 
@@ -137,7 +137,7 @@ void MainWindow::onDiscoverDevices()
 {
     auto id = m_devicesModel->data(m_devicesModel->index(m_devicesTable->currentIndex().row(), 1));
 
-    m_devices = m_fwSettingsWrapper->devices();
+    m_devices = m_digitizerInteractor->devices();
 
     m_devicesModel->blockSignals(true);
     m_devicesModel->setRowCount(static_cast<int>(m_devices.size()));
@@ -177,7 +177,7 @@ void MainWindow::setConnect()
             return;
 
         auto editAppendValue = [this](const int64_t &id, const auto &fwTypeName, const auto &nameValue, const int &column) {
-            auto value = m_fwSettingsWrapper->getSetting(id, fwTypeName, nameValue, column).toString();
+            auto value = m_digitizerInteractor->getSetting(id, fwTypeName, nameValue, column).toString();
             m_edit->append(QString("- %1::%2 = %3").arg(fwTypeName, nameValue, value));
         };
 
@@ -185,8 +185,8 @@ void MainWindow::setConnect()
         editAppendValue(id, "Device", "fpgaFirmwares", 1);
         editAppendValue(id, "Device", "fanControl", 1);
 
-        Q_UNUSED(m_fwSettingsWrapper->setSetting(id, "Device", "fpgaFirmwares", 1, 0));
-        Q_UNUSED(m_fwSettingsWrapper->setSetting(id, "Device", "fanControl", 1, "true"));
+        Q_UNUSED(m_digitizerInteractor->setSetting(id, "Device", "fpgaFirmwares", 1, 0));
+        Q_UNUSED(m_digitizerInteractor->setSetting(id, "Device", "fanControl", 1, "true"));
 
         m_edit->append("New value:");
         editAppendValue(id, "Device", "fpgaFirmwares", 1);
@@ -201,12 +201,12 @@ void MainWindow::setConnect()
         m_edit->append(QString("Discover: count device = %1").arg(m_devices.size()));
     });
 
-    connect(m_pbConnectDevice, &QPushButton::clicked, this, [this, callback = &FwSettingsWrapper::connectDevice]() {
+    connect(m_pbConnectDevice, &QPushButton::clicked, this, [this, callback = &DigitizerInteractor::connectDevice]() {
         if (auto id = idCurrentDevice(); id >= 0)
         {
-            auto r = (m_fwSettingsWrapper->*callback)(id);
+            auto r = (m_digitizerInteractor->*callback)(id);
 
-            auto channels = QString("; Channels = ") + QString::number(m_fwSettingsWrapper->getDeviceChannels(id));
+            auto channels = QString("; Channels = ") + QString::number(m_digitizerInteractor->getDeviceChannels(id));
 
             m_edit->setPlainText(QString("Id %1: Device %2 connected").arg(id).arg(r ? "" : "not") + channels);
 
@@ -216,10 +216,10 @@ void MainWindow::setConnect()
             m_edit->clear();
     });
 
-    connect(m_pbDisConnectDevice, &QPushButton::clicked, this, [this, callback = &FwSettingsWrapper::disconnectDevice]() {
+    connect(m_pbDisConnectDevice, &QPushButton::clicked, this, [this, callback = &DigitizerInteractor::disconnectDevice]() {
         if (auto id = idCurrentDevice(); id >= 0)
         {
-            auto r = (m_fwSettingsWrapper->*callback)(id);
+            auto r = (m_digitizerInteractor->*callback)(id);
             m_edit->setPlainText(QString("Id %1: Device %2 disconnected").arg(id).arg(r ? "" : "not"));
             onDiscoverDevices();
         }
@@ -227,10 +227,10 @@ void MainWindow::setConnect()
             m_edit->clear();
     });
 
-    connect(m_pbDownloadSettings, &QPushButton::clicked, this, [this, callback = &FwSettingsWrapper::downloadSettings]() {
+    connect(m_pbDownloadSettings, &QPushButton::clicked, this, [this, callback = &DigitizerInteractor::downloadSettings]() {
         if (auto id = idCurrentDevice(); id >= 0)
         {
-            auto r = (m_fwSettingsWrapper->*callback)(id);
+            auto r = (m_digitizerInteractor->*callback)(id);
             m_edit->setPlainText(QString("Id %1: Device settings %2 downloaded").arg(id).arg(r ? "" : "not"));
             onDiscoverDevices();
         }
@@ -238,10 +238,10 @@ void MainWindow::setConnect()
             m_edit->clear();
     });
 
-    connect(m_pbUploadSettings, &QPushButton::clicked, this, [this, callback = &FwSettingsWrapper::uploadSettings]() {
+    connect(m_pbUploadSettings, &QPushButton::clicked, this, [this, callback = &DigitizerInteractor::uploadSettings]() {
         if (auto id = idCurrentDevice(); id >= 0)
         {
-            auto r = (m_fwSettingsWrapper->*callback)(id);
+            auto r = (m_digitizerInteractor->*callback)(id);
             m_edit->setPlainText(QString("Id %1: Device settings %2 uploaded").arg(id).arg(r ? "" : "not"));
             onDiscoverDevices();
         }
@@ -249,14 +249,14 @@ void MainWindow::setConnect()
             m_edit->clear();
     });
 
-    connect(m_pbDeviceSettingList, &QPushButton::clicked, this, [this, callback = &FwSettingsWrapper::fwTypeList]() {
+    connect(m_pbDeviceSettingList, &QPushButton::clicked, this, [this, callback = &DigitizerInteractor::fwTypeList]() {
         if (auto id = idCurrentDevice(); id >= 0)
         {
-            auto fwTypeList = (m_fwSettingsWrapper->*callback)(id);
+            auto fwTypeList = (m_digitizerInteractor->*callback)(id);
 
             QStringList strList;
             for (auto fwType : fwTypeList)
-                strList.append(m_fwSettingsWrapper->fwType2Name(fwType));
+                strList.append(m_digitizerInteractor->fwType2Name(fwType));
 
             m_edit->setPlainText(QString("Id %1: Type settings list:\n %2").arg(id).arg(strList.isEmpty() ? "-" : strList.join(", ")));
             onDiscoverDevices();
@@ -276,12 +276,12 @@ void MainWindow::setConnect()
 void MainWindow::createFWSettingListMenu()
 {
     m_menuFWSettingList->clear();
-    for (auto fwTypeName : FWTypeName)
+    for (auto fwTypeName : digi::FWTypeName)
     {
         auto action = m_menuFWSettingList->addAction(fwTypeName);
         action->setCheckable(false);
         connect(action, &QAction::triggered, this, [this, id = idCurrentDevice(), name = fwTypeName]() {
-            auto strList = m_fwSettingsWrapper->fwSettingList(id, name);
+            auto strList = m_digitizerInteractor->fwSettingList(id, name);
             m_edit->clear();
             m_edit->setText(QString("Id %1: FW %2 settings list:\n\n").arg(id).arg(name));
             for (int n = 0; const auto &item : strList)
@@ -355,7 +355,7 @@ void MainWindow::onShowLeftPanel(bool checked, QPushButton *pbSender)
     if (m_pbDeviceSettings == pbSender)
     {
         m_editSV->hide();
-        if (auto model = m_fwSettingsWrapper->fwSettingTableModel(id, "Device"))
+        if (auto model = m_digitizerInteractor->fwSettingTableModel(id, "Device"))
         {
             if (m_dhsfTable->model() != model)
             {
@@ -369,7 +369,7 @@ void MainWindow::onShowLeftPanel(bool checked, QPushButton *pbSender)
 
     else if (m_pbPHASettings == pbSender)
     {
-        if (auto model = m_fwSettingsWrapper->fwSettingTableModel(id, "PHA"))
+        if (auto model = m_digitizerInteractor->fwSettingTableModel(id, "PHA"))
         {
             if (m_dhsfTable->model() != model)
             {
@@ -384,7 +384,7 @@ void MainWindow::onShowLeftPanel(bool checked, QPushButton *pbSender)
 
     else if (m_pbPSDSettings == pbSender)
     {
-        if (auto model = m_fwSettingsWrapper->fwSettingTableModel(id, "PSD"))
+        if (auto model = m_digitizerInteractor->fwSettingTableModel(id, "PSD"))
         {
             if (m_dhsfTable->model() != model)
             {
@@ -399,7 +399,7 @@ void MainWindow::onShowLeftPanel(bool checked, QPushButton *pbSender)
 
     else if (m_pbWAVESettings == pbSender)
     {
-        if (auto model = m_fwSettingsWrapper->fwSettingTableModel(id, "WAVEFORM"))
+        if (auto model = m_digitizerInteractor->fwSettingTableModel(id, "WAVEFORM"))
         {
             if (m_dhsfTable->model() != model)
             {

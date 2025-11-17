@@ -1,7 +1,5 @@
-#Digitizer_API/src/fw-settings-wrapper-example/CMakeLists.txt
-
 cmake_minimum_required(VERSION 3.16)
-project(fw-settings-wrapper-example)
+project(digitizer-example)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Concurrent StateMachine)
 
@@ -34,6 +32,6 @@ target_link_libraries(${PROJECT_NAME}
     digiscope-api::fw-settings-wrapper
 )
 
-install(TARGETS fw-settings-wrapper-example
+install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

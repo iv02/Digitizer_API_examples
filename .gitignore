@@ -632,7 +632,6 @@ FodyWeavers.xsd
 # Additional files built by Visual Studio
 3rdparty/
 
-
 # End of https://www.toptal.com/developers/gitignore/api/ninja,cmake,qt,qtcreator,visualstudio,visualstudiocode,sublimetext,macos,linux,windows
 *.json
 

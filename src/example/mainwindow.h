@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include "device.h"
-
 #include <QMainWindow>
 
 class QTextEdit;
@@ -12,9 +10,9 @@ class QStandardItemModel;
 class QTableView;
 class QGroupBox;
 
-namespace fwsr
+namespace digi
 {
-class FwSettingsWrapper;
+class DigitizerInteractor;
 }
 
 class MainWindow : public QMainWindow
@@ -47,7 +45,7 @@ class MainWindow : public QMainWindow
 
     void appendText(QTextEdit *edit, const QString &text, int percent);
 
-	fwsr::FwSettingsWrapper *m_fwSettingsWrapper;
+	digi::DigitizerInteractor *m_digitizerInteractor;
 
     QTextEdit *m_edit;
     QTextEdit *m_editSV;
