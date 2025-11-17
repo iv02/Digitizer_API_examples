@@ -27,6 +27,7 @@ class DeviceControlPanel : public QWidget
 
   signals:
     void deviceSelectionChanged(int64_t deviceId);
+    void deviceConnected(int64_t deviceId);
 
   private slots:
     void onDiscoverDevices();
@@ -41,6 +42,7 @@ class DeviceControlPanel : public QWidget
     void setupUi();
     void setupConnections();
     void setupTableStyle();
+    void logMessage(const QString &message);
 
     digi::DigitizerInteractor *m_interactor;
     QTextEdit *m_logEdit;

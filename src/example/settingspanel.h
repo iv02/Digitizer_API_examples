@@ -2,8 +2,10 @@
 
 #include <QWidget>
 
+class QHBoxLayout;
 class QPushButton;
 class QTableView;
+class QStandardItemModel;
 
 namespace digi
 {
@@ -20,30 +22,30 @@ class SettingsPanel : public QWidget
 
     void showSettings(int64_t deviceId, const QString &fwTypeName);
     void hideSettings();
+    void refreshFwTypeButtons();
     QString currentSettingsType() const;
     bool hasActiveSettings() const;
 
   private slots:
-    void onDeviceSettingsClicked();
-    void onPHASettingsClicked();
-    void onPSDSettingsClicked();
-    void onWAVESettingsClicked();
+    void onFwTypeButtonClicked();
 
   private:
     void setupUi();
     void setupConnections();
     void setupTableStyle();
+    void updateFwTypeButtons();
     void showSettingsTable(const QString &fwTypeName);
+    void updateSettingsModel(const QString &fwTypeName);
     void uncheckAllButtons();
 
     digi::DigitizerInteractor *m_interactor;
     QTableView *m_settingsTable;
+    QStandardItemModel *m_settingsModel;
+    QHBoxLayout *m_buttonLayout;
     int64_t m_currentDeviceId = -1;
+    QString m_currentFwTypeName;
 
-    QPushButton *m_pbDeviceSettings;
-    QPushButton *m_pbPHASettings;
-    QPushButton *m_pbPSDSettings;
-    QPushButton *m_pbWAVESettings;
+    QList<QPushButton *> m_fwTypeButtons;
     QPushButton *m_currentButton = nullptr;
 };
 

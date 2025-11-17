@@ -2,12 +2,10 @@
 #include "digitizerinteractor.h"
 
 #include <QHeaderView>
-#include <QHBoxLayout>
 #include <QPushButton>
 #include <QSplitter>
 #include <QStandardItemModel>
 #include <QTableView>
-#include <QTextCursor>
 #include <QTextEdit>
 #include <QVBoxLayout>
 
@@ -44,7 +42,12 @@ void DeviceControlPanel::refreshDevices()
 
 void DeviceControlPanel::appendLog(const QString &text)
 {
-    m_logEdit->append(text);
+    logMessage(text);
+}
+
+void DeviceControlPanel::logMessage(const QString &message)
+{
+    m_logEdit->append(message);
     QTextCursor cursor = m_logEdit->textCursor();
     cursor.movePosition(QTextCursor::End);
     m_logEdit->setTextCursor(cursor);
@@ -58,6 +61,7 @@ void DeviceControlPanel::clearLog()
 void DeviceControlPanel::setupUi()
 {
     m_devicesModel = new QStandardItemModel(this);
+    // Get device table column headers from DigitizerInteractor
     auto headerLabels = m_interactor->deviceHeaderLabels();
     m_devicesModel->setColumnCount(static_cast<int>(headerLabels.size()));
     m_devicesModel->setHorizontalHeaderLabels(headerLabels);
@@ -116,6 +120,7 @@ void DeviceControlPanel::onDiscoverDevices()
 {
     auto id = m_devicesModel->data(m_devicesModel->index(m_devicesTable->currentIndex().row(), 1));
 
+    // Discover all available devices using DigitizerInteractor
     m_devices = m_interactor->devices();
 
     m_devicesModel->blockSignals(true);
@@ -144,10 +149,7 @@ void DeviceControlPanel::onDiscoverDevices()
         m_devicesTable->scrollTo(m_devicesTable->model()->index(0, 0));
     }
 
-    m_logEdit->append(QString("Discover: count device = %1").arg(m_devices.size()));
-    QTextCursor cursor = m_logEdit->textCursor();
-    cursor.movePosition(QTextCursor::End);
-    m_logEdit->setTextCursor(cursor);
+    logMessage(QString("Discover: count device = %1").arg(m_devices.size()));
     onDeviceSelectionChanged();
 }
 
@@ -159,61 +161,48 @@ void DeviceControlPanel::onConnectDevice()
         return;
     }
 
+    // Connect to the selected device using DigitizerInteractor
     auto r = m_interactor->connectDevice(id);
+    // Get the number of channels for the connected device
     auto channels = QString("; Channels = ") + QString::number(m_interactor->getDeviceChannels(id));
-    m_logEdit->append(QString("Id %1: Device %2 connected").arg(id).arg(r ? "" : "not") + channels);
-    QTextCursor cursor = m_logEdit->textCursor();
-    cursor.movePosition(QTextCursor::End);
-    m_logEdit->setTextCursor(cursor);
-    onDiscoverDevices();
+    logMessage(QString("Id %1: Device %2 connected").arg(id).arg(r ? "" : "not") + channels);
+    if (r)
+    {
+        emit deviceConnected(id);
+    }
 }
 
 void DeviceControlPanel::onDisconnectDevice()
 {
     auto id = currentDeviceId();
     if (id < 0)
-    {
         return;
-    }
 
+    // Disconnect from the selected device using DigitizerInteractor
     auto r = m_interactor->disconnectDevice(id);
-    m_logEdit->append(QString("Id %1: Device %2 disconnected").arg(id).arg(r ? "" : "not"));
-    QTextCursor cursor = m_logEdit->textCursor();
-    cursor.movePosition(QTextCursor::End);
-    m_logEdit->setTextCursor(cursor);
-    onDiscoverDevices();
+    logMessage(QString("Id %1: Device %2 disconnected").arg(id).arg(r ? "" : "not"));
 }
 
 void DeviceControlPanel::onStartMeasure()
 {
     auto id = currentDeviceId();
     if (id < 0)
-    {
         return;
-    }
 
+    // Start measurement on the selected device using DigitizerInteractor
     auto r = m_interactor->startMeasure(id);
-    m_logEdit->append(QString("Id %1: Measurement %2 started").arg(id).arg(r ? "" : "not"));
-    QTextCursor cursor = m_logEdit->textCursor();
-    cursor.movePosition(QTextCursor::End);
-    m_logEdit->setTextCursor(cursor);
-    onDiscoverDevices();
+    logMessage(QString("Id %1: Measurement %2 started").arg(id).arg(r ? "" : "not"));
 }
 
 void DeviceControlPanel::onStopMeasure()
 {
     auto id = currentDeviceId();
     if (id < 0)
-    {
         return;
-    }
 
+    // Stop measurement on the selected device using DigitizerInteractor
     auto r = m_interactor->stopMeasure(id);
-    m_logEdit->append(QString("Id %1: Measurement %2 stopped").arg(id).arg(r ? "" : "not"));
-    QTextCursor cursor = m_logEdit->textCursor();
-    cursor.movePosition(QTextCursor::End);
-    m_logEdit->setTextCursor(cursor);
-    onDiscoverDevices();
+    logMessage(QString("Id %1: Measurement %2 stopped").arg(id).arg(r ? "" : "not"));
 }
 
 void DeviceControlPanel::onClearLog()

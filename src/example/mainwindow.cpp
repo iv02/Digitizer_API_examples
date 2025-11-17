@@ -29,7 +29,7 @@ void MainWindow::setupUi()
     m_deviceControlPanel = new DeviceControlPanel(m_digitizerInteractor, this);
     m_settingsPanel = new SettingsPanel(m_digitizerInteractor, this);
 
-    auto splitter = new QSplitter(Qt::Horizontal);
+    auto splitter = new QSplitter(Qt::Vertical);
     splitter->addWidget(m_deviceControlPanel);
     splitter->addWidget(m_settingsPanel);
 
@@ -43,6 +43,13 @@ void MainWindow::setupConnections()
 {
     connect(m_deviceControlPanel, &DeviceControlPanel::deviceSelectionChanged, this,
             &MainWindow::onDeviceSelectionChanged);
+    connect(m_deviceControlPanel, &DeviceControlPanel::deviceConnected, this,
+            [this](int64_t deviceId) {
+                if (m_settingsPanel->hasActiveSettings())
+                {
+                    m_settingsPanel->refreshFwTypeButtons();
+                }
+            });
 }
 
 void MainWindow::onDeviceSelectionChanged(int64_t deviceId)

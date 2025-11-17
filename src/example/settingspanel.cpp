@@ -1,18 +1,18 @@
 #include "settingspanel.h"
 #include "digitizerinteractor.h"
 
-#include <QHBoxLayout>
 #include <QHeaderView>
 #include <QPushButton>
-#include <QSpacerItem>
+#include <QStandardItemModel>
 #include <QTableView>
+#include <QTimer>
 #include <QVBoxLayout>
 
 using namespace digi;
 
-SettingsPanel::SettingsPanel(DigitizerInteractor *interactor, QWidget *parent)
-    : QWidget(parent), m_interactor(interactor)
+SettingsPanel::SettingsPanel(DigitizerInteractor *interactor, QWidget *parent) : QWidget(parent), m_interactor(interactor)
 {
+    m_settingsModel = new QStandardItemModel(this);
     setupUi();
     setupConnections();
     setupTableStyle();
@@ -21,19 +21,26 @@ SettingsPanel::SettingsPanel(DigitizerInteractor *interactor, QWidget *parent)
 void SettingsPanel::showSettings(int64_t deviceId, const QString &fwTypeName)
 {
     m_currentDeviceId = deviceId;
-    if (deviceId >= 0)
-    {
-        showSettingsTable(fwTypeName);
-        if (m_currentButton)
-        {
-            uncheckAllButtons();
-            m_currentButton->setChecked(true);
-        }
-    }
-    else
+    if (deviceId < 0)
     {
         hideSettings();
+        return;
     }
+
+    updateFwTypeButtons();
+    uncheckAllButtons();
+
+    for (auto button : m_fwTypeButtons)
+    {
+        if (button && button->property("fwTypeName").toString() == fwTypeName)
+        {
+            button->setChecked(true);
+            m_currentButton = button;
+            break;
+        }
+    }
+
+    showSettingsTable(fwTypeName);
 }
 
 void SettingsPanel::hideSettings()
@@ -46,21 +53,12 @@ void SettingsPanel::hideSettings()
 void SettingsPanel::setupUi()
 {
     m_settingsTable = new QTableView(this);
+    m_settingsTable->setModel(m_settingsModel);
 
-    auto buttonLayout = new QHBoxLayout();
-    buttonLayout->addWidget(m_pbDeviceSettings = new QPushButton("Device\n settings"));
-    buttonLayout->addWidget(m_pbPHASettings = new QPushButton("PHA\n settings"));
-    buttonLayout->addWidget(m_pbPSDSettings = new QPushButton("PSD\n settings"));
-    buttonLayout->addWidget(m_pbWAVESettings = new QPushButton("WAVE\n settings"));
-    buttonLayout->addItem(new QSpacerItem(10, 10, QSizePolicy::Expanding, QSizePolicy::Minimum));
-
-    m_pbDeviceSettings->setCheckable(true);
-    m_pbPHASettings->setCheckable(true);
-    m_pbPSDSettings->setCheckable(true);
-    m_pbWAVESettings->setCheckable(true);
+    m_buttonLayout = new QHBoxLayout();
 
     auto mainLayout = new QVBoxLayout();
-    mainLayout->addLayout(buttonLayout);
+    mainLayout->addLayout(m_buttonLayout);
     mainLayout->addWidget(m_settingsTable);
     mainLayout->addItem(new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding));
     setLayout(mainLayout);
@@ -70,10 +68,51 @@ void SettingsPanel::setupUi()
 
 void SettingsPanel::setupConnections()
 {
-    connect(m_pbDeviceSettings, &QPushButton::clicked, this, &SettingsPanel::onDeviceSettingsClicked);
-    connect(m_pbPHASettings, &QPushButton::clicked, this, &SettingsPanel::onPHASettingsClicked);
-    connect(m_pbPSDSettings, &QPushButton::clicked, this, &SettingsPanel::onPSDSettingsClicked);
-    connect(m_pbWAVESettings, &QPushButton::clicked, this, &SettingsPanel::onWAVESettingsClicked);
+    connect(m_settingsModel, &QStandardItemModel::itemChanged, this, [this](QStandardItem *item) {
+        if (item && m_currentDeviceId >= 0 && !m_currentFwTypeName.isEmpty())
+        {
+            int modelColumn = item->column();
+
+            if (modelColumn == 0)
+                return;
+
+            int row = item->row();
+            QString settingName = m_settingsModel->item(row, 0)->text();
+
+            QVariant value = item->data(Qt::EditRole);
+            QVariant oldValue = item->data(Qt::UserRole);
+
+            if (value == oldValue)
+                return;
+
+            bool isDevice = (m_currentFwTypeName == "Device");
+            int apiColumn;
+            if (isDevice)
+            {
+                apiColumn = 1;
+            }
+            else
+            {
+                if (modelColumn == 1)
+                    apiColumn = 0;
+                else
+                    apiColumn = modelColumn - 1;
+            }
+
+            // Set setting value using DigitizerInteractor
+            bool success = m_interactor->setSetting(m_currentDeviceId, m_currentFwTypeName, settingName, apiColumn, value);
+            if (!success)
+            {
+                m_settingsModel->blockSignals(true);
+                item->setData(oldValue, Qt::EditRole);
+                m_settingsModel->blockSignals(false);
+            }
+            else
+            {
+                item->setData(value, Qt::UserRole);
+            }
+        }
+    });
 }
 
 void SettingsPanel::setupTableStyle()
@@ -84,62 +123,30 @@ void SettingsPanel::setupTableStyle()
     m_settingsTable->setSelectionMode(QAbstractItemView::SingleSelection);
     m_settingsTable->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     m_settingsTable->verticalHeader()->setVisible(false);
+    m_settingsTable->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::SelectedClicked);
 }
 
-void SettingsPanel::onDeviceSettingsClicked()
+void SettingsPanel::onFwTypeButtonClicked()
 {
     if (m_currentDeviceId < 0)
     {
-        m_pbDeviceSettings->setChecked(false);
+        if (auto button = qobject_cast<QPushButton *>(sender()))
+            button->setChecked(false);
         return;
     }
 
-    uncheckAllButtons();
-    m_pbDeviceSettings->setChecked(true);
-    m_currentButton = m_pbDeviceSettings;
-    showSettingsTable("Device");
-}
-
-void SettingsPanel::onPHASettingsClicked()
-{
-    if (m_currentDeviceId < 0)
-    {
-        m_pbPHASettings->setChecked(false);
+    auto button = qobject_cast<QPushButton *>(sender());
+    if (!button)
         return;
-    }
 
-    uncheckAllButtons();
-    m_pbPHASettings->setChecked(true);
-    m_currentButton = m_pbPHASettings;
-    showSettingsTable("PHA");
-}
-
-void SettingsPanel::onPSDSettingsClicked()
-{
-    if (m_currentDeviceId < 0)
-    {
-        m_pbPSDSettings->setChecked(false);
+    QString fwTypeName = button->property("fwTypeName").toString();
+    if (fwTypeName.isEmpty())
         return;
-    }
 
     uncheckAllButtons();
-    m_pbPSDSettings->setChecked(true);
-    m_currentButton = m_pbPSDSettings;
-    showSettingsTable("PSD");
-}
-
-void SettingsPanel::onWAVESettingsClicked()
-{
-    if (m_currentDeviceId < 0)
-    {
-        m_pbWAVESettings->setChecked(false);
-        return;
-    }
-
-    uncheckAllButtons();
-    m_pbWAVESettings->setChecked(true);
-    m_currentButton = m_pbWAVESettings;
-    showSettingsTable("WAVEFORM");
+    button->setChecked(true);
+    m_currentButton = button;
+    showSettingsTable(fwTypeName);
 }
 
 void SettingsPanel::showSettingsTable(const QString &fwTypeName)
@@ -150,42 +157,175 @@ void SettingsPanel::showSettingsTable(const QString &fwTypeName)
         return;
     }
 
-    if (auto model = m_interactor->fwSettingTableModel(m_currentDeviceId, fwTypeName))
+    m_currentFwTypeName = fwTypeName;
+    updateSettingsModel(fwTypeName);
+    m_settingsTable->show();
+}
+
+void SettingsPanel::updateSettingsModel(const QString &fwTypeName)
+{
+    m_settingsModel->clear();
+
+    // Get list of settings for the firmware type using DigitizerInteractor
+    QStringList settingNames = m_interactor->fwSettingList(m_currentDeviceId, fwTypeName);
+    if (settingNames.isEmpty())
     {
-        if (m_settingsTable->model() != model)
-        {
-            m_settingsTable->setModel(model);
-        }
-        m_settingsTable->show();
+        m_settingsTable->hide();
+        return;
+    }
+
+    bool isDevice = (fwTypeName == "Device");
+
+    if (isDevice)
+    {
+        m_settingsModel->setColumnCount(2);
+        m_settingsModel->setHorizontalHeaderLabels(QStringList() << "Setting Name"
+                                                                 << "Value");
     }
     else
     {
-        m_settingsTable->hide();
+        // Get number of channels to determine column count
+        uint16_t channels = m_interactor->getDeviceChannels(m_currentDeviceId);
+        m_settingsModel->setColumnCount(static_cast<int>(channels) + 1);
+        QStringList headers;
+        headers << "Setting Name"
+                << "Default";
+        for (uint16_t ch = 1; ch <= channels; ++ch)
+            headers << QString("Ch %1").arg(ch);
+        m_settingsModel->setHorizontalHeaderLabels(headers);
+    }
+
+    m_settingsModel->setRowCount(settingNames.size());
+
+    for (int row = 0; row < settingNames.size(); ++row)
+    {
+        QString settingName = settingNames[row];
+
+        // Setting name column (not editable)
+        auto nameItem = new QStandardItem(settingName);
+        nameItem->setEditable(false);
+        m_settingsModel->setItem(row, 0, nameItem);
+
+        // Value columns
+        if (isDevice)
+        {
+            // Get current value for Device type (column 1)
+            QVariant value = m_interactor->getSetting(m_currentDeviceId, fwTypeName, settingName, 1);
+            auto valueItem = new QStandardItem(value.toString());
+            valueItem->setEditable(true);
+            valueItem->setData(value, Qt::UserRole);
+            m_settingsModel->setItem(row, 1, valueItem);
+        }
+        else
+        {
+            // Get default value (column 0)
+            QVariant defaultValue = m_interactor->getSetting(m_currentDeviceId, fwTypeName, settingName, 0);
+            auto defaultItem = new QStandardItem(defaultValue.toString());
+            defaultItem->setEditable(true);
+            defaultItem->setData(defaultValue, Qt::UserRole);
+            m_settingsModel->setItem(row, 1, defaultItem);
+
+            // Get channel-specific values
+            uint16_t channels = m_interactor->getDeviceChannels(m_currentDeviceId);
+            for (uint16_t ch = 0; ch < channels; ++ch)
+            {
+                QVariant chValue = m_interactor->getSetting(m_currentDeviceId, fwTypeName, settingName, static_cast<int>(ch + 1));
+                auto chItem = new QStandardItem(chValue.toString());
+                chItem->setEditable(true);
+                chItem->setData(chValue, Qt::UserRole);
+                m_settingsModel->setItem(row, static_cast<int>(ch + 2), chItem);
+            }
+        }
+    }
+}
+
+void SettingsPanel::updateFwTypeButtons()
+{
+    // Clear existing buttons
+    m_currentButton = nullptr;
+    for (auto button : m_fwTypeButtons)
+    {
+        button->deleteLater();
+    }
+    m_fwTypeButtons.clear();
+
+    if (m_currentDeviceId < 0)
+        return;
+
+    // Check if device is connected before getting firmware types
+    if (!m_interactor->isDeviceConnected(m_currentDeviceId))
+        return;
+
+    // Get available firmware types for the device using DigitizerInteractor
+    QStringList fwTypeNames = m_interactor->fwTypeNameList(m_currentDeviceId);
+
+    if (fwTypeNames.isEmpty())
+        return;
+
+    while (m_buttonLayout->count() > 0)
+    {
+        QLayoutItem *item = m_buttonLayout->takeAt(0);
+        if (item)
+        {
+            if (item->widget())
+                delete item->widget();
+            delete item;
+        }
+    }
+
+    for (const QString &fwTypeName : fwTypeNames)
+    {
+        auto button = new QPushButton(fwTypeName + "\n settings", this);
+        button->setCheckable(true);
+        button->setProperty("fwTypeName", fwTypeName);
+        connect(button, &QPushButton::clicked, this, &SettingsPanel::onFwTypeButtonClicked);
+        m_buttonLayout->addWidget(button);
+        m_fwTypeButtons.append(button);
+    }
+
+    m_buttonLayout->addItem(new QSpacerItem(10, 10, QSizePolicy::Expanding, QSizePolicy::Minimum));
+}
+
+void SettingsPanel::refreshFwTypeButtons()
+{
+    if (m_currentDeviceId < 0)
+        return;
+
+    updateFwTypeButtons();
+
+    if (!m_currentFwTypeName.isEmpty())
+    {
+        uncheckAllButtons();
+        for (auto button : m_fwTypeButtons)
+        {
+            if (button && button->property("fwTypeName").toString() == m_currentFwTypeName)
+            {
+                button->setChecked(true);
+                m_currentButton = button;
+                break;
+            }
+        }
     }
 }
 
 void SettingsPanel::uncheckAllButtons()
 {
-    m_pbDeviceSettings->setChecked(false);
-    m_pbPHASettings->setChecked(false);
-    m_pbPSDSettings->setChecked(false);
-    m_pbWAVESettings->setChecked(false);
+    for (auto button : m_fwTypeButtons)
+    {
+        if (button)
+            button->setChecked(false);
+    }
     m_currentButton = nullptr;
 }
 
 QString SettingsPanel::currentSettingsType() const
 {
-    if (m_pbPHASettings->isChecked())
-        return "PHA";
-    else if (m_pbPSDSettings->isChecked())
-        return "PSD";
-    else if (m_pbWAVESettings->isChecked())
-        return "WAVEFORM";
-    return "Device";
+    if (m_currentButton)
+        return m_currentButton->property("fwTypeName").toString();
+    return m_currentFwTypeName;
 }
 
 bool SettingsPanel::hasActiveSettings() const
 {
     return m_currentButton != nullptr;
 }
-

@@ -290,22 +290,6 @@ class DigitizerInteractor
     bool setSetting(const int64_t &id, const QString &fwTypeName, const QString &name, const int &column, const QVariant &value) const;
 
     /**
-     * Retrieves an editable table model for firmware settings of specified type.
-     * 
-     * @param id 64-bit device identifier
-     * @param fwTypeName Name of the firmware type (case-sensitive match) 
-     * @return Pointer to QAbstractTableModel with:
-     *         - Rows: settings (ordered as in fwSettingList())
-     *         - Columns: [Setting Name, Default Value, Current Value]
-     *         - Edit role: Column 1 (Current Value) is editable
-     * @note If fwTypeName doesn't match known types, it returns nullptr
-     * @note The returned pointer is managed internally - DO NOT DELETE IT
-     * @warning Manual deletion will cause application crashes 
-     * @see fwTypeNameList(), getSetting(), fwSettingList()
-     */
-    QAbstractTableModel *fwSettingTableModel(const int64_t &id, const QString &fwTypeName);
-
-    /**
      * Sets callback function for receiving single event data.
      * 
      * @param callback Function to be called when event data is received:
