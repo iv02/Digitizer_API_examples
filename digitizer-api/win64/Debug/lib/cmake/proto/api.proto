@@ -1,0 +1,262 @@
+syntax = "proto3";
+
+enum ConfirmType
+{ 
+    UNKNOWN = 0;
+    ACCEPTED = 1;
+    REJECTED = 2;
+}
+
+//[MAINTAINING CONNECTION]
+message PingRequest
+{
+    uint64 timestamp = 1;
+    string softwareId = 2;
+};
+
+message PingResponse
+{
+    ConfirmType confirm = 1;
+};
+
+//[PROTOCOL VERSION]
+message ProtocolVersionRequest
+{
+    uint32 timestamp = 1;
+    string softwareId = 2;
+};
+
+message ProtocolVersionReply
+{
+    ConfirmType confirm = 1;
+    uint32 major = 2;
+    uint32 minor = 3;
+    uint32 patch = 4;
+};
+
+//[CONNECT-DISCONNECT DEVICE]
+enum ConnectReplyStatus
+{
+    CONNECT_SUCCESS = 0;
+    CONNECTED_SAME = 1;
+    CONNECTED_OTHER = 2;
+}
+
+enum DisconnectReplyStatus
+{
+    DISCONNECT_SUCCESS = 0;
+    ALREADY_DISCONNECTED = 1;
+}
+
+message ConnectRequest
+{
+    uint32 timestamp = 1;
+    string softwareId = 2;
+    uint32 port_data = 3;
+};
+
+message ConnectReply
+{
+    ConfirmType confirm = 1;
+    ConnectReplyStatus status = 2;
+};
+
+message DisconnectRequest
+{
+    uint32 timestamp = 1;
+    string softwareId = 2;
+};
+
+message DisconnectReply
+{
+    ConfirmType confirm = 1;
+    DisconnectReplyStatus status = 2;
+};
+
+//[FIRMWARE UPDATE]
+message FirmwareUpdateRequest
+{
+    uint32 timestamp = 1;
+    string softwareId = 2;
+
+    message FPGAFirmware
+    {
+        bytes fpga_payload = 1;
+        string fpga_md5 = 2;
+        bytes dtbo_payload = 3;
+        string dtbo_md5 = 4;
+    }
+
+    repeated FPGAFirmware firmware = 3;
+    bytes software_payload = 4;
+    string software_md5 = 5;
+
+    string version = 6;
+    string date = 7;
+    string description = 8;
+};
+
+message FirmwareUpdateReply
+{
+    ConfirmType confirm = 1;
+};
+
+message DeviceRootFSUpdateRequest
+{
+    uint32 timestamp = 1;
+    string softwareId = 2;
+
+    bytes rootfs_payload = 3;
+    string rootfs_md5 = 4;
+    string description = 5;
+};
+
+message DeviceRootFSUpdateReply
+{
+    ConfirmType confirm = 1;
+    string error = 2;
+};
+
+//[REBOOT DEVICE]
+message RebootRequest
+{
+    uint32 timestamp = 1;
+    string softwareId = 2;
+};
+
+message RebootReply
+{
+    ConfirmType confirm = 1;
+};
+
+//[DISCOVERING MESSAGE]
+message ProtocolVersion
+{
+    uint32 major = 1;
+    uint32 minor = 2;
+    uint32 patch = 3;
+}
+
+message HardwareInfo
+{
+    uint32 adc_channels_number = 1;
+    uint32 adc_sample_rate = 2;
+    uint32 bit_resolution = 3;
+}
+
+message DeviceInfo
+{
+    uint32 id = 1;
+    uint32 serial = 2;
+    string version_fpga = 3;
+    string version_arm = 4;
+    string name = 5;
+    string description = 6;
+    ProtocolVersion protocol_version = 7;
+    HardwareInfo hardware_info = 8;
+}
+
+message DiscoverBroadcastMessage
+{
+    string ip4 = 1;
+    string ip6 = 2;
+    uint32 port_command = 3;
+    uint32 port_connection = 4;
+    DeviceInfo device_info = 5;
+}
+
+//[FIRMWARE SETTINGS]
+message FirmwareSettingsSchemaRequest
+{
+    uint32 timestamp = 1;
+    string softwareId = 2;
+};
+
+message FirmwareSettingsSchemaReply
+{
+     ConfirmType confirm = 1;
+     string schemaJson = 2;
+};
+
+message FirmwareSettingsValuesRequest
+{
+    uint32 timestamp = 1;
+    string softwareId = 2;
+};
+
+message FirmwareSettingsValuesReply
+{
+     ConfirmType confirm = 1;
+     string valuesJson = 2;
+};
+
+message SetFirmwareSettingsValuesRequest
+{
+    uint32 timestamp = 1;
+    string softwareId = 2;
+    string valuesJson = 3;
+};
+
+message SetFirmwareSettingsValuesReply
+{
+     ConfirmType confirm = 1;
+};
+
+//[START - STOP MEASUREMENT]
+message StartMeasurementRequest
+{
+    uint32 timestamp = 1;
+    string softwareId = 2;
+};
+
+message StartMeasurementReply
+{
+     ConfirmType confirm = 1;
+};
+
+message StopMeasurementRequest
+{
+    uint32 timestamp = 1;
+    string softwareId = 2;
+};
+
+message StopMeasurementReply
+{
+     ConfirmType confirm = 1;
+};
+
+message StartMeasurementWithTimeRequest
+{
+    uint32 timestamp = 1;
+    string softwareId = 2;
+    uint32 durationMs = 3;
+};
+
+message StartMeasurementWithTimeReply
+{
+     ConfirmType confirm = 1;
+};
+
+//[SERVICES]
+service MaintainingApi {
+    rpc Ping (PingRequest) returns (PingResponse) {}
+}
+
+service CommandApi {
+    rpc ProtocolVersion (ProtocolVersionRequest) returns (ProtocolVersionReply) {}
+    rpc ConnectDevice (ConnectRequest) returns (ConnectReply) {}
+    rpc DisconnectDevice (DisconnectRequest) returns (DisconnectReply) {}
+
+    rpc UpdateDeviceFirmware (FirmwareUpdateRequest) returns (FirmwareUpdateReply){}
+    rpc UpdateDeviceRootFS (DeviceRootFSUpdateRequest) returns (DeviceRootFSUpdateReply){}
+
+    rpc RebootDevice (RebootRequest) returns (RebootReply){}
+
+    rpc FirmwareSettingsSchema (FirmwareSettingsSchemaRequest) returns (FirmwareSettingsSchemaReply) {}
+    rpc FirmwareSettingsValues (FirmwareSettingsValuesRequest) returns (FirmwareSettingsValuesReply) {}
+    rpc SetFirmwareSettingsValues (SetFirmwareSettingsValuesRequest) returns (SetFirmwareSettingsValuesReply) {}
+
+    rpc StartMeasurement (StartMeasurementRequest) returns (StartMeasurementReply) {}
+    rpc StopMeasurement (StopMeasurementRequest) returns (StopMeasurementReply) {}
+    rpc StartMeasurementWithTime (StartMeasurementWithTimeRequest) returns (StartMeasurementWithTimeReply) {}
+}
