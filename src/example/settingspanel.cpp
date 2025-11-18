@@ -1,21 +1,20 @@
 #include "settingspanel.h"
 #include "digitizerinteractor.h"
 
-#include <QHeaderView>
+#include <QComboBox>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
 #include <QPushButton>
-#include <QStandardItemModel>
-#include <QTableView>
-#include <QTimer>
+#include <QTextEdit>
 #include <QVBoxLayout>
 
 using namespace digi;
 
 SettingsPanel::SettingsPanel(DigitizerInteractor *interactor, QWidget *parent) : QWidget(parent), m_interactor(interactor)
 {
-    m_settingsModel = new QStandardItemModel(this);
     setupUi();
     setupConnections();
-    setupTableStyle();
 }
 
 void SettingsPanel::showSettings(int64_t deviceId, const QString &fwTypeName)
@@ -27,263 +26,321 @@ void SettingsPanel::showSettings(int64_t deviceId, const QString &fwTypeName)
         return;
     }
 
-    updateFwTypeButtons();
-    uncheckAllButtons();
+    updateChannelComboBox();
 
-    for (auto button : m_fwTypeButtons)
+    if (!fwTypeName.isEmpty())
     {
-        if (button && button->property("fwTypeName").toString() == fwTypeName)
+        int index = m_fwTypeComboBox->findText(fwTypeName);
+        if (index >= 0)
         {
-            button->setChecked(true);
-            m_currentButton = button;
-            break;
+            m_fwTypeComboBox->setCurrentIndex(index);
+            m_currentFwTypeName = fwTypeName;
         }
     }
-
-    showSettingsTable(fwTypeName);
 }
 
 void SettingsPanel::hideSettings()
 {
-    m_settingsTable->hide();
     m_currentDeviceId = -1;
-    uncheckAllButtons();
+    m_currentFwTypeName.clear();
+    m_fwTypeComboBox->clear();
+    m_channelComboBox->clear();
+    clearInputs();
 }
 
 void SettingsPanel::setupUi()
 {
-    m_settingsTable = new QTableView(this);
-    m_settingsTable->setModel(m_settingsModel);
-
-    m_buttonLayout = new QHBoxLayout();
-
-    auto mainLayout = new QVBoxLayout();
-    mainLayout->addLayout(m_buttonLayout);
-    mainLayout->addWidget(m_settingsTable);
-    mainLayout->addItem(new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding));
-    setLayout(mainLayout);
-
-    m_settingsTable->hide();
+    m_mainLayout = new QVBoxLayout(this);
+    
+    auto historyLabel = new QLabel("История команд:", this);
+    m_historyTextEdit = new QTextEdit(this);
+    m_historyTextEdit->setReadOnly(true);
+    m_historyTextEdit->setMinimumHeight(200);
+    
+    auto fwTypeLayout = new QHBoxLayout();
+    auto fwTypeLabel = new QLabel("Тип прошивки:", this);
+    m_fwTypeComboBox = new QComboBox(this);
+    m_fwTypeComboBox->setMinimumWidth(300);
+    m_refreshFwTypeButton = new QPushButton("Обновить", this);
+    fwTypeLayout->addWidget(fwTypeLabel);
+    fwTypeLayout->addWidget(m_fwTypeComboBox);
+    fwTypeLayout->addWidget(m_refreshFwTypeButton);
+    fwTypeLayout->addStretch();
+    
+    auto inputLayout = new QHBoxLayout();
+    auto nameLabel = new QLabel("Имя настройки:", this);
+    m_settingNameEdit = new QLineEdit(this);
+    auto valueLabel = new QLabel("Значение:", this);
+    m_settingValueEdit = new QLineEdit(this);
+    auto channelLabel = new QLabel("Канал:", this);
+    m_channelComboBox = new QComboBox(this);
+    m_channelComboBox->setMinimumWidth(120);
+    inputLayout->addWidget(nameLabel);
+    inputLayout->addWidget(m_settingNameEdit);
+    inputLayout->addWidget(valueLabel);
+    inputLayout->addWidget(m_settingValueEdit);
+    inputLayout->addWidget(channelLabel);
+    inputLayout->addWidget(m_channelComboBox);
+    
+    auto buttonsLayout = new QHBoxLayout();
+    m_setButton = new QPushButton("Set", this);
+    m_getButton = new QPushButton("Get", this);
+    m_getSettingsListButton = new QPushButton("Get Settings List", this);
+    buttonsLayout->addWidget(m_setButton);
+    buttonsLayout->addWidget(m_getButton);
+    buttonsLayout->addWidget(m_getSettingsListButton);
+    buttonsLayout->addStretch();
+    
+    m_mainLayout->addWidget(historyLabel);
+    m_mainLayout->addWidget(m_historyTextEdit);
+    m_mainLayout->addLayout(fwTypeLayout);
+    m_mainLayout->addLayout(inputLayout);
+    m_mainLayout->addLayout(buttonsLayout);
+    m_mainLayout->addStretch();
+    
+    setLayout(m_mainLayout);
 }
 
 void SettingsPanel::setupConnections()
 {
-    connect(m_settingsModel, &QStandardItemModel::itemChanged, this, [this](QStandardItem *item) {
-        if (item && m_currentDeviceId >= 0 && !m_currentFwTypeName.isEmpty())
-        {
-            int modelColumn = item->column();
-
-            if (modelColumn == 0)
-                return;
-
-            int row = item->row();
-            QString settingName = m_settingsModel->item(row, 0)->text();
-
-            QVariant value = item->data(Qt::EditRole);
-            QVariant oldValue = item->data(Qt::UserRole);
-
-            if (value == oldValue)
-                return;
-
-            bool isDevice = (m_currentFwTypeName == "Device");
-            int apiColumn;
-            if (isDevice)
-            {
-                apiColumn = 1;
-            }
-            else
-            {
-                if (modelColumn == 1)
-                    apiColumn = 0;
-                else
-                    apiColumn = modelColumn - 1;
-            }
-
-            // Set setting value using DigitizerInteractor
-            bool success = m_interactor->setSetting(m_currentDeviceId, m_currentFwTypeName, settingName, apiColumn, value);
-            if (!success)
-            {
-                m_settingsModel->blockSignals(true);
-                item->setData(oldValue, Qt::EditRole);
-                m_settingsModel->blockSignals(false);
-            }
-            else
-            {
-                item->setData(value, Qt::UserRole);
-            }
-        }
-    });
+    connect(m_setButton, &QPushButton::clicked, this, &SettingsPanel::onSetButtonClicked);
+    connect(m_getButton, &QPushButton::clicked, this, &SettingsPanel::onGetButtonClicked);
+    connect(m_getSettingsListButton, &QPushButton::clicked, this, &SettingsPanel::onGetSettingsListButtonClicked);
+    connect(m_fwTypeComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SettingsPanel::onFwTypeComboBoxChanged);
+    connect(m_refreshFwTypeButton, &QPushButton::clicked, this, &SettingsPanel::onRefreshFwTypeButtonClicked);
 }
 
-void SettingsPanel::setupTableStyle()
-{
-    m_settingsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-    m_settingsTable->horizontalHeader()->setStretchLastSection(true);
-    m_settingsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_settingsTable->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_settingsTable->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    m_settingsTable->verticalHeader()->setVisible(false);
-    m_settingsTable->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::SelectedClicked);
-}
-
-void SettingsPanel::onFwTypeButtonClicked()
+void SettingsPanel::onSetButtonClicked()
 {
     if (m_currentDeviceId < 0)
     {
-        if (auto button = qobject_cast<QPushButton *>(sender()))
-            button->setChecked(false);
+        appendToHistory("Ошибка: устройство не выбрано");
         return;
     }
 
-    auto button = qobject_cast<QPushButton *>(sender());
-    if (!button)
-        return;
-
-    QString fwTypeName = button->property("fwTypeName").toString();
-    if (fwTypeName.isEmpty())
-        return;
-
-    uncheckAllButtons();
-    button->setChecked(true);
-    m_currentButton = button;
-    showSettingsTable(fwTypeName);
-}
-
-void SettingsPanel::showSettingsTable(const QString &fwTypeName)
-{
-    if (m_currentDeviceId < 0)
+    if (m_currentFwTypeName.isEmpty())
     {
-        m_settingsTable->hide();
+        appendToHistory("Ошибка: тип прошивки не выбран");
         return;
     }
 
-    m_currentFwTypeName = fwTypeName;
-    updateSettingsModel(fwTypeName);
-    m_settingsTable->show();
-}
-
-void SettingsPanel::updateSettingsModel(const QString &fwTypeName)
-{
-    m_settingsModel->clear();
-
-    // Get list of settings for the firmware type using DigitizerInteractor
-    QStringList settingNames = m_interactor->fwSettingList(m_currentDeviceId, fwTypeName);
-    if (settingNames.isEmpty())
+    QString settingName = m_settingNameEdit->text().trimmed();
+    if (settingName.isEmpty())
     {
-        m_settingsTable->hide();
+        appendToHistory("Ошибка: имя настройки не указано");
         return;
     }
 
-    bool isDevice = (fwTypeName == "Device");
+    QString valueStr = m_settingValueEdit->text().trimmed();
+    if (valueStr.isEmpty())
+    {
+        appendToHistory("Ошибка: значение не указано");
+        return;
+    }
 
+    bool isDevice = (m_currentFwTypeName == "Device");
+    int apiColumn;
     if (isDevice)
     {
-        m_settingsModel->setColumnCount(2);
-        m_settingsModel->setHorizontalHeaderLabels(QStringList() << "Setting Name"
-                                                                 << "Value");
+        apiColumn = 1;
     }
     else
     {
-        // Get number of channels to determine column count
-        uint16_t channels = m_interactor->getDeviceChannels(m_currentDeviceId);
-        m_settingsModel->setColumnCount(static_cast<int>(channels) + 1);
-        QStringList headers;
-        headers << "Setting Name"
-                << "Default";
-        for (uint16_t ch = 1; ch <= channels; ++ch)
-            headers << QString("Ch %1").arg(ch);
-        m_settingsModel->setHorizontalHeaderLabels(headers);
+        int channelIndex = m_channelComboBox->currentIndex();
+        if (channelIndex < 0)
+        {
+            appendToHistory("Ошибка: канал не выбран");
+            return;
+        }
+        apiColumn = m_channelComboBox->itemData(channelIndex).toInt();
     }
 
-    m_settingsModel->setRowCount(settingNames.size());
-
-    for (int row = 0; row < settingNames.size(); ++row)
+    QVariant value(valueStr);
+    
+    bool success = m_interactor->setSetting(m_currentDeviceId, m_currentFwTypeName, settingName, apiColumn, value);
+    
+    QString channelInfo = isDevice ? "Device" : QString("Канал %1").arg(apiColumn);
+    if (success)
     {
-        QString settingName = settingNames[row];
+        appendToHistory(QString("Set: %1 = %2 (тип: %3, %4) - Успешно")
+                       .arg(settingName, valueStr, m_currentFwTypeName, channelInfo));
+    }
+    else
+    {
+        appendToHistory(QString("Set: %1 = %2 (тип: %3, %4) - Ошибка")
+                       .arg(settingName, valueStr, m_currentFwTypeName, channelInfo));
+    }
+}
 
-        // Setting name column (not editable)
-        auto nameItem = new QStandardItem(settingName);
-        nameItem->setEditable(false);
-        m_settingsModel->setItem(row, 0, nameItem);
+void SettingsPanel::onGetButtonClicked()
+{
+    if (m_currentDeviceId < 0)
+    {
+        appendToHistory("Ошибка: устройство не выбрано");
+        return;
+    }
 
-        // Value columns
-        if (isDevice)
+    if (m_currentFwTypeName.isEmpty())
+    {
+        appendToHistory("Ошибка: тип прошивки не выбран");
+        return;
+    }
+
+    QString settingName = m_settingNameEdit->text().trimmed();
+    if (settingName.isEmpty())
+    {
+        appendToHistory("Ошибка: имя настройки не указано");
+        return;
+    }
+
+    bool isDevice = (m_currentFwTypeName == "Device");
+    int apiColumn;
+    if (isDevice)
+    {
+        apiColumn = 1;
+    }
+    else
+    {
+        int channelIndex = m_channelComboBox->currentIndex();
+        if (channelIndex < 0)
         {
-            // Get current value for Device type (column 1)
-            QVariant value = m_interactor->getSetting(m_currentDeviceId, fwTypeName, settingName, 1);
-            auto valueItem = new QStandardItem(value.toString());
-            valueItem->setEditable(true);
-            valueItem->setData(value, Qt::UserRole);
-            m_settingsModel->setItem(row, 1, valueItem);
+            appendToHistory("Ошибка: канал не выбран");
+            return;
         }
-        else
-        {
-            // Get default value (column 0)
-            QVariant defaultValue = m_interactor->getSetting(m_currentDeviceId, fwTypeName, settingName, 0);
-            auto defaultItem = new QStandardItem(defaultValue.toString());
-            defaultItem->setEditable(true);
-            defaultItem->setData(defaultValue, Qt::UserRole);
-            m_settingsModel->setItem(row, 1, defaultItem);
+        apiColumn = m_channelComboBox->itemData(channelIndex).toInt();
+    }
 
-            // Get channel-specific values
-            uint16_t channels = m_interactor->getDeviceChannels(m_currentDeviceId);
-            for (uint16_t ch = 0; ch < channels; ++ch)
-            {
-                QVariant chValue = m_interactor->getSetting(m_currentDeviceId, fwTypeName, settingName, static_cast<int>(ch + 1));
-                auto chItem = new QStandardItem(chValue.toString());
-                chItem->setEditable(true);
-                chItem->setData(chValue, Qt::UserRole);
-                m_settingsModel->setItem(row, static_cast<int>(ch + 2), chItem);
-            }
+    QVariant value = m_interactor->getSetting(m_currentDeviceId, m_currentFwTypeName, settingName, apiColumn);
+    
+    QString valueStr = value.toString();
+    m_settingValueEdit->setText(valueStr);
+    
+    QString channelInfo = isDevice ? "Device" : QString("Канал %1").arg(apiColumn);
+    appendToHistory(QString("Get: %1 = %2 (тип: %3, %4)")
+                   .arg(settingName, valueStr, m_currentFwTypeName, channelInfo));
+}
+
+void SettingsPanel::onGetSettingsListButtonClicked()
+{
+    if (m_currentDeviceId < 0)
+    {
+        appendToHistory("Ошибка: устройство не выбрано");
+        return;
+    }
+
+    if (m_currentFwTypeName.isEmpty())
+    {
+        appendToHistory("Ошибка: тип прошивки не выбран");
+        return;
+    }
+
+    QStringList settingNames = m_interactor->fwSettingList(m_currentDeviceId, m_currentFwTypeName);
+    
+    if (settingNames.isEmpty())
+    {
+        appendToHistory(QString("Get Settings List (тип: %1): список пуст").arg(m_currentFwTypeName));
+    }
+    else
+    {
+        appendToHistory(QString("Get Settings List (тип: %1):").arg(m_currentFwTypeName));
+        for (const QString &name : settingNames)
+        {
+            appendToHistory(QString("  - %1").arg(name));
         }
     }
 }
 
-void SettingsPanel::updateFwTypeButtons()
+void SettingsPanel::onFwTypeComboBoxChanged(int index)
 {
-    // Clear existing buttons
-    m_currentButton = nullptr;
-    for (auto button : m_fwTypeButtons)
-    {
-        button->deleteLater();
-    }
-    m_fwTypeButtons.clear();
+    if (index < 0 || m_currentDeviceId < 0)
+        return;
 
+    QString fwTypeName = m_fwTypeComboBox->itemText(index);
+    m_currentFwTypeName = fwTypeName;
+    updateChannelComboBox();
+    appendToHistory(QString("Выбран тип прошивки: %1").arg(fwTypeName));
+}
+
+void SettingsPanel::updateFwTypeComboBox()
+{
+    m_fwTypeComboBox->clear();
+    
     if (m_currentDeviceId < 0)
+    {
+        appendToHistory("Ошибка: устройство не выбрано для обновления списка типов прошивки");
         return;
+    }
 
-    // Check if device is connected before getting firmware types
-    if (!m_interactor->isDeviceConnected(m_currentDeviceId))
-        return;
+    bool isConnected = m_interactor->isDeviceConnected(m_currentDeviceId);
+    appendToHistory(QString("Обновление списка типов прошивки для устройства %1 (подключено: %2)")
+                   .arg(m_currentDeviceId).arg(isConnected ? "да" : "нет"));
 
-    // Get available firmware types for the device using DigitizerInteractor
     QStringList fwTypeNames = m_interactor->fwTypeNameList(m_currentDeviceId);
 
     if (fwTypeNames.isEmpty())
+    {
+        appendToHistory("Список типов прошивки пуст");
+        if (!isConnected)
+        {
+            appendToHistory("Попробуйте подключить устройство и обновить список");
+        }
+        return;
+    }
+
+    m_fwTypeComboBox->addItems(fwTypeNames);
+    appendToHistory(QString("Добавлено типов прошивки: %1").arg(fwTypeNames.size()));
+    
+    if (m_fwTypeComboBox->count() > 0 && m_currentFwTypeName.isEmpty())
+    {
+        m_fwTypeComboBox->setCurrentIndex(0);
+        m_currentFwTypeName = m_fwTypeComboBox->currentText();
+        appendToHistory(QString("Автоматически выбран тип прошивки: %1").arg(m_currentFwTypeName));
+    }
+}
+
+void SettingsPanel::updateChannelComboBox()
+{
+    m_channelComboBox->clear();
+    
+    if (m_currentDeviceId < 0)
         return;
 
-    while (m_buttonLayout->count() > 0)
+    bool isDevice = (m_currentFwTypeName == "Device");
+    
+    if (isDevice)
     {
-        QLayoutItem *item = m_buttonLayout->takeAt(0);
-        if (item)
-        {
-            if (item->widget())
-                delete item->widget();
-            delete item;
-        }
+        m_channelComboBox->setEnabled(false);
+        return;
     }
-
-    for (const QString &fwTypeName : fwTypeNames)
+    
+    m_channelComboBox->setEnabled(true);
+    
+    m_channelComboBox->addItem("Default", 0);
+    
+    uint16_t channels = m_interactor->getDeviceChannels(m_currentDeviceId);
+    for (uint16_t ch = 1; ch <= channels; ++ch)
     {
-        auto button = new QPushButton(fwTypeName + "\n settings", this);
-        button->setCheckable(true);
-        button->setProperty("fwTypeName", fwTypeName);
-        connect(button, &QPushButton::clicked, this, &SettingsPanel::onFwTypeButtonClicked);
-        m_buttonLayout->addWidget(button);
-        m_fwTypeButtons.append(button);
+        m_channelComboBox->addItem(QString("Channel %1").arg(ch), static_cast<int>(ch));
     }
+    
+    if (m_channelComboBox->count() > 0)
+    {
+        m_channelComboBox->setCurrentIndex(0);
+    }
+}
 
-    m_buttonLayout->addItem(new QSpacerItem(10, 10, QSizePolicy::Expanding, QSizePolicy::Minimum));
+void SettingsPanel::appendToHistory(const QString &message)
+{
+    m_historyTextEdit->append(message);
+    QTextCursor cursor = m_historyTextEdit->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    m_historyTextEdit->setTextCursor(cursor);
+}
+
+void SettingsPanel::clearInputs()
+{
+    m_settingNameEdit->clear();
+    m_settingValueEdit->clear();
 }
 
 void SettingsPanel::refreshFwTypeButtons()
@@ -291,41 +348,62 @@ void SettingsPanel::refreshFwTypeButtons()
     if (m_currentDeviceId < 0)
         return;
 
-    updateFwTypeButtons();
+    updateFwTypeComboBox();
 
     if (!m_currentFwTypeName.isEmpty())
     {
-        uncheckAllButtons();
-        for (auto button : m_fwTypeButtons)
+        int index = m_fwTypeComboBox->findText(m_currentFwTypeName);
+        if (index >= 0)
         {
-            if (button && button->property("fwTypeName").toString() == m_currentFwTypeName)
-            {
-                button->setChecked(true);
-                m_currentButton = button;
-                break;
-            }
+            m_fwTypeComboBox->setCurrentIndex(index);
         }
     }
+    
+    updateChannelComboBox();
 }
 
-void SettingsPanel::uncheckAllButtons()
+void SettingsPanel::onRefreshFwTypeButtonClicked()
 {
-    for (auto button : m_fwTypeButtons)
+    if (m_currentDeviceId < 0)
     {
-        if (button)
-            button->setChecked(false);
+        appendToHistory("Ошибка: устройство не выбрано");
+        return;
     }
-    m_currentButton = nullptr;
+
+    QString savedFwTypeName = m_currentFwTypeName;
+    updateFwTypeComboBox();
+
+    if (!savedFwTypeName.isEmpty())
+    {
+        int index = m_fwTypeComboBox->findText(savedFwTypeName);
+        if (index >= 0)
+        {
+            m_fwTypeComboBox->setCurrentIndex(index);
+            m_currentFwTypeName = savedFwTypeName;
+        }
+        else if (m_fwTypeComboBox->count() > 0)
+        {
+            m_fwTypeComboBox->setCurrentIndex(0);
+            m_currentFwTypeName = m_fwTypeComboBox->currentText();
+            appendToHistory(QString("Предыдущий тип прошивки '%1' не найден, выбран первый доступный: %2")
+                          .arg(savedFwTypeName, m_currentFwTypeName));
+        }
+    }
+    else if (m_fwTypeComboBox->count() > 0)
+    {
+        m_fwTypeComboBox->setCurrentIndex(0);
+        m_currentFwTypeName = m_fwTypeComboBox->currentText();
+    }
+    
+    updateChannelComboBox();
 }
 
 QString SettingsPanel::currentSettingsType() const
 {
-    if (m_currentButton)
-        return m_currentButton->property("fwTypeName").toString();
     return m_currentFwTypeName;
 }
 
 bool SettingsPanel::hasActiveSettings() const
 {
-    return m_currentButton != nullptr;
+    return m_currentDeviceId >= 0 && !m_currentFwTypeName.isEmpty();
 }

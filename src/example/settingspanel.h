@@ -2,10 +2,13 @@
 
 #include <QWidget>
 
-class QHBoxLayout;
+class QComboBox;
+class QLineEdit;
 class QPushButton;
-class QTableView;
-class QStandardItemModel;
+class QTextEdit;
+class QVBoxLayout;
+class QHBoxLayout;
+class QLabel;
 
 namespace digi
 {
@@ -27,25 +30,36 @@ class SettingsPanel : public QWidget
     bool hasActiveSettings() const;
 
   private slots:
-    void onFwTypeButtonClicked();
+    void onSetButtonClicked();
+    void onGetButtonClicked();
+    void onGetSettingsListButtonClicked();
+    void onFwTypeComboBoxChanged(int index);
+    void onRefreshFwTypeButtonClicked();
 
   private:
     void setupUi();
     void setupConnections();
-    void setupTableStyle();
-    void updateFwTypeButtons();
-    void showSettingsTable(const QString &fwTypeName);
-    void updateSettingsModel(const QString &fwTypeName);
-    void uncheckAllButtons();
+    void updateFwTypeComboBox();
+    void updateChannelComboBox();
+    void appendToHistory(const QString &message);
+    void clearInputs();
 
     digi::DigitizerInteractor *m_interactor;
-    QTableView *m_settingsTable;
-    QStandardItemModel *m_settingsModel;
-    QHBoxLayout *m_buttonLayout;
+    
+    // UI элементы
+    QTextEdit *m_historyTextEdit;
+    QLineEdit *m_settingNameEdit;
+    QLineEdit *m_settingValueEdit;
+    QPushButton *m_setButton;
+    QPushButton *m_getButton;
+    QComboBox *m_fwTypeComboBox;
+    QPushButton *m_getSettingsListButton;
+    QPushButton *m_refreshFwTypeButton;
+    QComboBox *m_channelComboBox;
+    
+    QVBoxLayout *m_mainLayout;
+    
     int64_t m_currentDeviceId = -1;
     QString m_currentFwTypeName;
-
-    QList<QPushButton *> m_fwTypeButtons;
-    QPushButton *m_currentButton = nullptr;
 };
 
