@@ -1,8 +1,7 @@
 #pragma once
 #include "networkenums.h"
 #include "packets/eventpackettype.h"
-#include "packetwrappers/eventpacket.h"
-#include "eventdata.h"
+#include "packetwrappers/eventdata.h"
 #include "threaded.h"
 
 #include "buffers/packetbuffer.h"

@@ -44,6 +44,7 @@ class DeviceSettingsTableModel : public QAbstractTableModel, public IAbstractSet
     void setSettingsValues(const QJsonObject &values) override;
     QVariantList getSettings() const override;
     QJsonObject getCurrentSettingsObject() override;
+    [[nodiscard]] bool hasChanges() const override;
 
   private:
     QString tableTag() const noexcept override;

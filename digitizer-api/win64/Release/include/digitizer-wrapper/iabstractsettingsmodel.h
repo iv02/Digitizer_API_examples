@@ -55,6 +55,7 @@ class IAbstractSettingsModel
     virtual void setSettingsValues(const QJsonObject &values) = 0;
     [[nodiscard]] virtual QVariantList getSettings() const = 0;
     virtual QJsonObject getCurrentSettingsObject() = 0;
+    [[nodiscard]] virtual bool hasChanges() const = 0;
     virtual void commitSettings() = 0;
     virtual void resetSettings() = 0;
     virtual QAbstractItemModel *model() = 0;

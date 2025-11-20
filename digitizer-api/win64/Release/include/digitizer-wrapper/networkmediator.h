@@ -1,8 +1,7 @@
 #pragma once
 
 #include "networkworker.h"
-#include "eventdata.h"
-#include "packetwrappers/eventpacket.h"
+#include "packetwrappers/eventdata.h"
 
 #include <QObject>
 

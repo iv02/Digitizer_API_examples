@@ -311,6 +311,16 @@ class DigitizerInteractor
      */
     void setDataBatchCallback(std::function<void(const QVector<network::EventData> &batch)> callback);
 
+    /**
+     * Sets callback function for receiving device discovery notifications.
+     * 
+     * @param callback Function to be called when a device is discovered:
+     *        - deviceId: Unique 64-bit device identifier
+     * @note The callback is called from the device manager thread
+     * @note Setting nullptr disables the callback
+     */
+    void setDeviceDiscoveryCallback(std::function<void(int64_t deviceId)> callback);
+
   private:
     DigitizerInteractor(const DigitizerInteractor &) = delete;
     DigitizerInteractor(DigitizerInteractor &&) = delete;

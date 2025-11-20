@@ -41,6 +41,7 @@ class FirmwareSettingsTableModel : public QAbstractTableModel, public IAbstractS
     void setSettingsSchema(const QJsonObject &schema, int channelsNumber) override;
     void setSettingsValues(const QJsonObject &values) override;
     QJsonObject getCurrentSettingsObject() override;
+    [[nodiscard]] bool hasChanges() const override;
 
   private:
     QString tableTag() const noexcept override;

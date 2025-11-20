@@ -4,7 +4,7 @@
 
 #include "device.h"
 #include "devicemanagerbase.h"
-#include "eventdata.h"
+#include "packetwrappers/eventdata.h"
 
 #include <QAbstractTableModel>
 #include <QObject>
@@ -43,6 +43,7 @@ class DeviceManagerWrapper final : public device::DeviceManagerBase
 
     void setDataEventCallback(const std::function<void(const network::EventData &)> &callback);
     void setDataBatchCallback(const std::function<void(const QVector<network::EventData> &batch)> &callback);
+    void setDeviceDiscoveryCallback(const std::function<void(int64_t deviceId)> &callback);
 
   public slots:
     QList<QString> deviceHeaderLabels() const;
@@ -72,9 +73,13 @@ class DeviceManagerWrapper final : public device::DeviceManagerBase
                              const QSharedPointer<network::EventPacket> &waveform) const;
     void onDataReceivedBatch(client::DataSource source, const QVector<network::EventData> &batch) const;
 
+  private slots:
+    void onDeviceDiscovered(int64_t deviceId);
+
   private:
     std::function<void(const network::EventData &)> m_dataEventCallback;
     std::function<void(const QVector<network::EventData> &batch)> m_dataBatchCallback;
+    std::function<void(int64_t deviceId)> m_deviceDiscoveryCallback;
 };
 
 } // namespace device

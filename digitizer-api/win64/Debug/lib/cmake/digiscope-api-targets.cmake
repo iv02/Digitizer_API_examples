@@ -91,7 +91,7 @@ if(NOT CMAKE_VERSION VERSION_LESS "3.23.0")
       FILE_SET "HEADERS"
       TYPE "HEADERS"
       BASE_DIRS "${_IMPORT_PREFIX}/include/event-packet"
-      FILES "${_IMPORT_PREFIX}/include/event-packet/buffers/packetbuffer.h" "${_IMPORT_PREFIX}/include/event-packet/buffers/packetparser.h" "${_IMPORT_PREFIX}/include/event-packet/buffers/splituppacketassembler.h" "${_IMPORT_PREFIX}/include/event-packet/buffers/wavewaveformseparator.h" "${_IMPORT_PREFIX}/include/event-packet/packets/consistentchannelspectrum16.h" "${_IMPORT_PREFIX}/include/event-packet/packets/consistentchannelspectrum32.h" "${_IMPORT_PREFIX}/include/event-packet/packets/detectron2dnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packets/detectronstatisticnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packets/eventpackettype.h" "${_IMPORT_PREFIX}/include/event-packet/packets/phanetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packets/psdnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packets/spectrumtype.h" "${_IMPORT_PREFIX}/include/event-packet/packets/waveformnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packetwrappers/eventpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packetwrappers/eventpacketheader.h"
+      FILES "${_IMPORT_PREFIX}/include/event-packet/buffers/packetbuffer.h" "${_IMPORT_PREFIX}/include/event-packet/buffers/packetparser.h" "${_IMPORT_PREFIX}/include/event-packet/buffers/splituppacketassembler.h" "${_IMPORT_PREFIX}/include/event-packet/buffers/wavewaveformseparator.h" "${_IMPORT_PREFIX}/include/event-packet/packets/consistentchannelspectrum16.h" "${_IMPORT_PREFIX}/include/event-packet/packets/consistentchannelspectrum32.h" "${_IMPORT_PREFIX}/include/event-packet/packets/detectron2dnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packets/detectronstatisticnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packets/eventpackettype.h" "${_IMPORT_PREFIX}/include/event-packet/packets/phanetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packets/psdnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packets/spectrumtype.h" "${_IMPORT_PREFIX}/include/event-packet/packets/waveformnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packetwrappers/eventdata.h" "${_IMPORT_PREFIX}/include/event-packet/packetwrappers/eventpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packetwrappers/eventpacketheader.h"
   )
 else()
   set_property(TARGET digiscope-api::event-packet
@@ -114,7 +114,7 @@ if(NOT CMAKE_VERSION VERSION_LESS "3.23.0")
       FILE_SET "HEADERS"
       TYPE "HEADERS"
       BASE_DIRS "${_IMPORT_PREFIX}/include/networker"
-      FILES "${_IMPORT_PREFIX}/include/networker/commanddeviceconnector.h" "${_IMPORT_PREFIX}/include/networker/commandsupportflags.h" "${_IMPORT_PREFIX}/include/networker/eventdata.h" "${_IMPORT_PREFIX}/include/networker/maintainingdeviceconnector.h" "${_IMPORT_PREFIX}/include/networker/networkenums.h" "${_IMPORT_PREFIX}/include/networker/networkworker.h" "${_IMPORT_PREFIX}/include/networker/threaded.h"
+      FILES "${_IMPORT_PREFIX}/include/networker/commanddeviceconnector.h" "${_IMPORT_PREFIX}/include/networker/commandsupportflags.h" "${_IMPORT_PREFIX}/include/networker/maintainingdeviceconnector.h" "${_IMPORT_PREFIX}/include/networker/networkenums.h" "${_IMPORT_PREFIX}/include/networker/networkworker.h" "${_IMPORT_PREFIX}/include/networker/threaded.h"
   )
 else()
   set_property(TARGET digiscope-api::networker
