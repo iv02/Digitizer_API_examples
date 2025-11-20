@@ -2,12 +2,16 @@
 #include "digitizerinteractor.h"
 
 #include <QHeaderView>
-#include <QPushButton>
+#include <QJsonDocument>
+#include <QMenuBar>
+#include <QMenu>
+#include <QAction>
 #include <QSplitter>
 #include <QStandardItemModel>
 #include <QTableView>
 #include <QTextEdit>
 #include <QVBoxLayout>
+#include <QTimer>
 
 using namespace digi;
 
@@ -37,7 +41,37 @@ int64_t DeviceControlPanel::currentDeviceId() const
 
 void DeviceControlPanel::refreshDevices()
 {
-    onDiscoverDevices();
+    m_devices = m_interactor->devices();
+
+    auto id = m_devicesModel->data(m_devicesModel->index(m_devicesTable->currentIndex().row(), 1));
+
+    m_devicesModel->blockSignals(true);
+    m_devicesModel->setRowCount(static_cast<int>(m_devices.size()));
+    for (int row = 0; auto &items : m_devices)
+    {
+        for (int col = 0; col < items.size(); ++col)
+            m_devicesModel->setData(m_devicesModel->index(row, col), items[col], Qt::EditRole);
+        ++row;
+    }
+    m_devicesModel->blockSignals(false);
+    m_devicesModel->layoutChanged();
+
+    if (id.isValid())
+    {
+        for (int row = 0; row < m_devicesModel->rowCount(); ++row)
+            if (auto index = m_devicesModel->index(row, 1); id == m_devicesModel->data(index))
+            {
+                m_devicesTable->selectRow(index.row());
+                m_devicesTable->scrollTo(index);
+            }
+    }
+    else if (m_devicesModel->rowCount() > 0)
+    {
+        m_devicesTable->selectRow(0);
+        m_devicesTable->scrollTo(m_devicesTable->model()->index(0, 0));
+    }
+
+    onDeviceSelectionChanged();
 }
 
 void DeviceControlPanel::appendLog(const QString &text)
@@ -78,29 +112,45 @@ void DeviceControlPanel::setupUi()
     splitter->setStretchFactor(0, 7);
     splitter->setStretchFactor(1, 2);
 
-    auto buttonLayout = new QHBoxLayout();
-    buttonLayout->addWidget(m_pbDiscoverDevices = new QPushButton("Discovered\n devices"));
-    buttonLayout->addWidget(m_pbConnectDevice = new QPushButton("Connect\n device"));
-    buttonLayout->addWidget(m_pbDisConnectDevice = new QPushButton("Disconnect\n device"));
-    buttonLayout->addWidget(m_pbStartMeasure = new QPushButton("Start\n measure"));
-    buttonLayout->addWidget(m_pbStopMeasure = new QPushButton("Stop\n measure"));
-    buttonLayout->addWidget(m_pbClearLog = new QPushButton("Clear\n log"));
-    buttonLayout->addItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
+    m_menuBar = new QMenuBar(this);
+    
+    m_deviceMenu = m_menuBar->addMenu("Device");
+    m_actionConnectDevice = m_deviceMenu->addAction("Connect device");
+    m_actionDisconnectDevice = m_deviceMenu->addAction("Disconnect device");
+    m_deviceMenu->addSeparator();
+    m_actionStartMeasure = m_deviceMenu->addAction("Start measure");
+    m_actionStopMeasure = m_deviceMenu->addAction("Stop measure");
+    
+    m_settingsMenu = m_menuBar->addMenu("Settings");
+    m_actionShowFirmwareSettings = m_settingsMenu->addAction("Show FW Settings");
+    m_actionUploadSettings = m_settingsMenu->addAction("Upload settings");
+    m_actionDownloadSettings = m_settingsMenu->addAction("Download settings");
+    
+    m_logMenu = m_menuBar->addMenu("Log");
+    m_actionClearLog = m_logMenu->addAction("Clear log");
 
     auto mainLayout = new QVBoxLayout();
-    mainLayout->addLayout(buttonLayout);
+    mainLayout->setMenuBar(m_menuBar);
     mainLayout->addWidget(splitter);
     setLayout(mainLayout);
 }
 
 void DeviceControlPanel::setupConnections()
 {
-    connect(m_pbDiscoverDevices, &QPushButton::clicked, this, &DeviceControlPanel::onDiscoverDevices);
-    connect(m_pbConnectDevice, &QPushButton::clicked, this, &DeviceControlPanel::onConnectDevice);
-    connect(m_pbDisConnectDevice, &QPushButton::clicked, this, &DeviceControlPanel::onDisconnectDevice);
-    connect(m_pbStartMeasure, &QPushButton::clicked, this, &DeviceControlPanel::onStartMeasure);
-    connect(m_pbStopMeasure, &QPushButton::clicked, this, &DeviceControlPanel::onStopMeasure);
-    connect(m_pbClearLog, &QPushButton::clicked, this, &DeviceControlPanel::onClearLog);
+    m_interactor->setDeviceDiscoveryCallback([this](int64_t deviceId) {
+        QTimer::singleShot(0, this, [this, deviceId]() {
+            onDeviceDiscovered(deviceId);
+        });
+    });
+
+    connect(m_actionConnectDevice, &QAction::triggered, this, &DeviceControlPanel::onConnectDevice);
+    connect(m_actionDisconnectDevice, &QAction::triggered, this, &DeviceControlPanel::onDisconnectDevice);
+    connect(m_actionStartMeasure, &QAction::triggered, this, &DeviceControlPanel::onStartMeasure);
+    connect(m_actionStopMeasure, &QAction::triggered, this, &DeviceControlPanel::onStopMeasure);
+    connect(m_actionClearLog, &QAction::triggered, this, &DeviceControlPanel::onClearLog);
+    connect(m_actionShowFirmwareSettings, &QAction::triggered, this, &DeviceControlPanel::onLogFirmwareSettings);
+    connect(m_actionUploadSettings, &QAction::triggered, this, &DeviceControlPanel::onUploadSettings);
+    connect(m_actionDownloadSettings, &QAction::triggered, this, &DeviceControlPanel::onDownloadSettings);
     connect(m_devicesTable->selectionModel(), &QItemSelectionModel::currentChanged, this,
             &DeviceControlPanel::onDeviceSelectionChanged);
 }
@@ -116,12 +166,11 @@ void DeviceControlPanel::setupTableStyle()
     m_devicesTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
 }
 
-void DeviceControlPanel::onDiscoverDevices()
+void DeviceControlPanel::onDeviceDiscovered(int64_t deviceId)
 {
-    auto id = m_devicesModel->data(m_devicesModel->index(m_devicesTable->currentIndex().row(), 1));
-
-    // Discover all available devices using DigitizerInteractor
     m_devices = m_interactor->devices();
+
+    auto id = m_devicesModel->data(m_devicesModel->index(m_devicesTable->currentIndex().row(), 1));
 
     m_devicesModel->blockSignals(true);
     m_devicesModel->setRowCount(static_cast<int>(m_devices.size()));
@@ -149,7 +198,7 @@ void DeviceControlPanel::onDiscoverDevices()
         m_devicesTable->scrollTo(m_devicesTable->model()->index(0, 0));
     }
 
-    logMessage(QString("Discover: count device = %1").arg(m_devices.size()));
+    logMessage(QString("Device discovered: id = %1, total count = %2").arg(deviceId).arg(m_devices.size()));
     onDeviceSelectionChanged();
 }
 
@@ -213,5 +262,74 @@ void DeviceControlPanel::onClearLog()
 void DeviceControlPanel::onDeviceSelectionChanged()
 {
     emit deviceSelectionChanged(currentDeviceId());
+}
+
+void DeviceControlPanel::onLogFirmwareSettings()
+{
+    auto id = currentDeviceId();
+    if (id < 0)
+    {
+        logMessage("No device selected");
+        return;
+    }
+
+    if (!m_interactor->isDeviceConnected(id))
+    {
+        logMessage(QString("Id %1: Device not connected").arg(id));
+        return;
+    }
+
+    auto schema = m_interactor->firmwareSettings(id).first;
+    
+    logMessage(QString("Id %1: Firmware Settings Schema:").arg(id));
+    
+    QJsonParseError error;
+    auto doc = QJsonDocument::fromJson(schema.toUtf8(), &error);
+    if (error.error == QJsonParseError::NoError)
+    {
+        logMessage(QString::fromUtf8(doc.toJson(QJsonDocument::Indented)));
+    }
+    else
+    {
+        logMessage(schema);
+    }
+}
+
+void DeviceControlPanel::onUploadSettings()
+{
+    auto id = currentDeviceId();
+    if (id < 0)
+    {
+        logMessage("No device selected");
+        return;
+    }
+
+    if (!m_interactor->isDeviceConnected(id))
+    {
+        logMessage(QString("Id %1: Device not connected").arg(id));
+        return;
+    }
+
+    auto result = m_interactor->uploadSettings(id);
+    logMessage(QString("Id %1: Settings upload %2").arg(id).arg(result ? "successful" : "failed"));
+}
+
+void DeviceControlPanel::onDownloadSettings()
+{
+    auto id = currentDeviceId();
+    if (id < 0)
+    {
+        logMessage("No device selected");
+        return;
+    }
+
+    if (!m_interactor->isDeviceConnected(id))
+    {
+        logMessage(QString("Id %1: Device not connected").arg(id));
+        return;
+    }
+
+    auto result = m_interactor->downloadSettings(id);
+    logMessage(QString("Id %1: Settings download %2").arg(id).arg(result ? "successful" : "failed"));
 }
 

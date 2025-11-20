@@ -1,6 +1,9 @@
 ﻿#pragma once
 
 #include <QMainWindow>
+#include "packetwrappers/eventdata.h"
+
+class QTimer;
 
 namespace digi
 {
@@ -9,6 +12,8 @@ class DigitizerInteractor;
 
 class DeviceControlPanel;
 class SettingsPanel;
+class WaveformSpectrumWidget;
+class DataTableWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -20,6 +25,7 @@ class MainWindow : public QMainWindow
 
   private slots:
     void onDeviceSelectionChanged(int64_t deviceId);
+    void onUpdateTimer();
 
   private:
     void setupUi();
@@ -29,4 +35,10 @@ class MainWindow : public QMainWindow
     digi::DigitizerInteractor *m_digitizerInteractor;
     DeviceControlPanel *m_deviceControlPanel;
     SettingsPanel *m_settingsPanel;
+    WaveformSpectrumWidget *m_waveformSpectrumWidget;
+    DataTableWidget *m_dataTableWidget;
+    
+    QTimer *m_updateTimer;
+    network::EventData m_pendingEventData;
+    bool m_hasPendingData;
 };

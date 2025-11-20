@@ -6,6 +6,9 @@ class QTextEdit;
 class QPushButton;
 class QStandardItemModel;
 class QTableView;
+class QMenuBar;
+class QMenu;
+class QAction;
 
 namespace digi
 {
@@ -30,13 +33,16 @@ class DeviceControlPanel : public QWidget
     void deviceConnected(int64_t deviceId);
 
   private slots:
-    void onDiscoverDevices();
+    void onDeviceDiscovered(int64_t deviceId);
     void onConnectDevice();
     void onDisconnectDevice();
     void onStartMeasure();
     void onStopMeasure();
     void onClearLog();
     void onDeviceSelectionChanged();
+    void onLogFirmwareSettings();
+    void onUploadSettings();
+    void onDownloadSettings();
 
   private:
     void setupUi();
@@ -50,11 +56,18 @@ class DeviceControlPanel : public QWidget
     QTableView *m_devicesTable;
     QMap<int64_t, QList<QString>> m_devices;
 
-    QPushButton *m_pbDiscoverDevices;
-    QPushButton *m_pbConnectDevice;
-    QPushButton *m_pbDisConnectDevice;
-    QPushButton *m_pbStartMeasure;
-    QPushButton *m_pbStopMeasure;
-    QPushButton *m_pbClearLog;
+    QMenuBar *m_menuBar;
+    QMenu *m_deviceMenu;
+    QMenu *m_settingsMenu;
+    QMenu *m_logMenu;
+    
+    QAction *m_actionConnectDevice;
+    QAction *m_actionDisconnectDevice;
+    QAction *m_actionStartMeasure;
+    QAction *m_actionStopMeasure;
+    QAction *m_actionShowFirmwareSettings;
+    QAction *m_actionUploadSettings;
+    QAction *m_actionDownloadSettings;
+    QAction *m_actionClearLog;
 };
 

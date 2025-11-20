@@ -1,14 +1,39 @@
 ﻿#include "mainwindow.h"
 #include "devicecontrolpanel.h"
 #include "settingspanel.h"
+#include "waveformspectrumwidget.h"
+#include "datatablewidget.h"
 #include "digitizerinteractor.h"
+#include "packetwrappers/eventdata.h"
 
-#include <QSplitter>
-#include <QVBoxLayout>
+#include <QGridLayout>
+#include <QMetaObject>
+#include <QTimer>
 
 using namespace digi;
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
+namespace
+{
+    struct EventDataMetaType
+    {
+        EventDataMetaType()
+        {
+            qRegisterMetaType<network::EventData>("network::EventData");
+            qRegisterMetaType<QVector<network::EventData>>("QVector<network::EventData>");
+        }
+    };
+    static EventDataMetaType eventDataMetaType;
+}
+
+MainWindow::MainWindow(QWidget *parent) 
+    : QMainWindow(parent)
+    , m_digitizerInteractor(nullptr)
+    , m_deviceControlPanel(nullptr)
+    , m_settingsPanel(nullptr)
+    , m_waveformSpectrumWidget(nullptr)
+    , m_dataTableWidget(nullptr)
+    , m_updateTimer(nullptr)
+    , m_hasPendingData(false)
 {
     setupUi();
     setupConnections();
@@ -28,15 +53,27 @@ void MainWindow::setupUi()
     m_digitizerInteractor = new digi::DigitizerInteractor();
     m_deviceControlPanel = new DeviceControlPanel(m_digitizerInteractor, this);
     m_settingsPanel = new SettingsPanel(m_digitizerInteractor, this);
+    m_waveformSpectrumWidget = new WaveformSpectrumWidget(m_digitizerInteractor, this);
+    m_dataTableWidget = new DataTableWidget(m_digitizerInteractor, this);
 
-    auto splitter = new QSplitter(Qt::Vertical);
-    splitter->addWidget(m_deviceControlPanel);
-    splitter->addWidget(m_settingsPanel);
+    auto gridLayout = new QGridLayout();
+    gridLayout->addWidget(m_deviceControlPanel, 0, 0);
+    gridLayout->addWidget(m_settingsPanel, 1, 0);
+    gridLayout->addWidget(m_waveformSpectrumWidget, 0, 1);
+    gridLayout->addWidget(m_dataTableWidget, 1, 1);
+    gridLayout->setColumnStretch(0, 1);
+    gridLayout->setColumnStretch(1, 1);
+    gridLayout->setRowStretch(0, 1);
+    gridLayout->setRowStretch(1, 1);
 
     auto centralWidget = new QWidget(this);
-    centralWidget->setLayout(new QVBoxLayout());
+    centralWidget->setLayout(gridLayout);
     setCentralWidget(centralWidget);
-    centralWidget->layout()->addWidget(splitter);
+
+    m_updateTimer = new QTimer(this);
+    m_updateTimer->setSingleShot(true);
+    m_updateTimer->setInterval(300);
+    connect(m_updateTimer, &QTimer::timeout, this, &MainWindow::onUpdateTimer);
 }
 
 void MainWindow::setupConnections()
@@ -50,6 +87,45 @@ void MainWindow::setupConnections()
                     m_settingsPanel->refreshFwTypeButtons();
                 }
             });
+
+    m_digitizerInteractor->setDataEventCallback([this](const network::EventData &eventData) {
+        QMetaObject::invokeMethod(this, [this, eventData]() {
+            m_pendingEventData = eventData;
+            m_hasPendingData = true;
+
+            if (!m_updateTimer->isActive())
+            {
+                m_updateTimer->start();
+            }
+        }, Qt::QueuedConnection);
+    });
+
+    m_digitizerInteractor->setDataBatchCallback([this](const QVector<network::EventData> &batch) {
+        QMetaObject::invokeMethod(this, [this, batch]() {
+            if (!batch.isEmpty())
+            {
+                m_pendingEventData = batch.last();
+                m_hasPendingData = true;
+
+                if (!m_updateTimer->isActive())
+                {
+                    m_updateTimer->start();
+                }
+            }
+        }, Qt::QueuedConnection);
+    });
+}
+
+void MainWindow::onUpdateTimer()
+{
+    if (m_hasPendingData)
+    {
+        QMetaObject::invokeMethod(m_waveformSpectrumWidget, "processEventData", Qt::QueuedConnection,
+                                  Q_ARG(const network::EventData &, m_pendingEventData));
+        QMetaObject::invokeMethod(m_dataTableWidget, "processEventData", Qt::QueuedConnection,
+                                  Q_ARG(const network::EventData &, m_pendingEventData));
+        m_hasPendingData = false;
+    }
 }
 
 void MainWindow::onDeviceSelectionChanged(int64_t deviceId)

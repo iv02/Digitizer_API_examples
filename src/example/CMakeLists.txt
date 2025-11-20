@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(digitizer-example)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Concurrent StateMachine)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Concurrent StateMachine Charts)
 
 file(GLOB HEADERS CONFIGURE_DEPENDS "*.h")
 file(GLOB SOURCES CONFIGURE_DEPENDS "*.cpp")
@@ -21,6 +21,12 @@ qt_add_executable(${PROJECT_NAME} WIN32 ${SOURCES})
 target_compile_definitions(${PROJECT_NAME} PRIVATE QT_MESSAGELOGCONTEXT)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
+if(WIN32)
+    target_include_directories(${PROJECT_NAME} PRIVATE 
+        "${CMAKE_SOURCE_DIR}/digitizer-api/win64/${CMAKE_BUILD_TYPE}/include/event-packet"
+    )
+endif()
+
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
     Qt6::Core
@@ -28,8 +34,10 @@ target_link_libraries(${PROJECT_NAME}
     Qt6::Gui
     Qt6::Widgets 
     Qt6::Concurrent
-    Qt6::StateMachine 
+    Qt6::StateMachine
+    Qt6::Charts
     digiscope-api::digitizer-wrapper
+    digiscope-api::event-packet
 )
 
 install(TARGETS ${PROJECT_NAME}
