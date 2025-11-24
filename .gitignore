@@ -641,3 +641,5 @@ libs/
 #digitizer-api
 !digitizer-api/win64/Debug/
 !digitizer-api/win64/Release/
+!digitizer-api/linux/Debug/
+!digitizer-api/linux/Release/
