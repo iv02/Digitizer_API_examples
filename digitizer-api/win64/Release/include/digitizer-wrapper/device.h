@@ -3,6 +3,7 @@
 #include "devicestatemachine.h"
 
 #include <QObject>
+#include <memory>
 
 namespace device
 {
@@ -130,7 +131,7 @@ class Device : public QObject
 
     QVariantList m_settings{};
     Hardware m_hardware{};
-    QScopedPointer<DeviceStateMachine> m_stateMachine{};
+    std::unique_ptr<DeviceStateMachine> m_stateMachine{};
 };
 
 } // namespace device
