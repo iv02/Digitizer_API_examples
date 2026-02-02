@@ -8,25 +8,25 @@ namespace network
 {
 
 /*
- * Binary format ConsistentChannelSpectrum32
+ * Binary format DeviceSpectrum16
  *
  * 4 byte - deviceId - Digitizer ID (Spacer)
  * 1 byte - packetType - enum class EventPacketType : quint8
  * 1 byte - flags - service information
- * 2 byte - channelId - For Spectrum bitmask of channels
+ * 2 byte - channelId - Channel ID
  * 8 byte - rtc - timestamp
-
+ *
  * 4 byte - length (array size)
  * 2 byte - spectrumType - enum class SpectrumType : quint16
  * 2 byte - padding length
- * 4 byte[length] - spectrum array
+ * 2 byte[length] - spectrum array
  * 2 byte - checksum
  * 2 byte[paddingLength] - padding to align by 8 byte
  *
  * TotalSize - multiple of 8 bytes (uint64_t)
  */
 
-struct ConsistentChannelSpectrum32
+struct DeviceSpectrum16
 {
     QDataStream &deserialize(QDataStream &in)
     {
@@ -36,7 +36,7 @@ struct ConsistentChannelSpectrum32
 
         for (quint32 i = 0; i < arrayLength; ++i)
         {
-            qint32 value;
+            qint16 value;
             in >> value;
             array.push_back(value);
         }
@@ -54,12 +54,12 @@ struct ConsistentChannelSpectrum32
 
     static quint32 arrayLengthOffset()
     {
-        return offsetof(ConsistentChannelSpectrum32, arrayLength);
+        return offsetof(DeviceSpectrum16, arrayLength);
     }
 
     static quint32 paddingLengthOffset()
     {
-        return offsetof(ConsistentChannelSpectrum32, paddingLength);
+        return offsetof(DeviceSpectrum16, paddingLength);
     }
 
     static quint32 fixedPartSize()
@@ -69,7 +69,7 @@ struct ConsistentChannelSpectrum32
 
     static quint32 arrayItemSize()
     {
-        return sizeof(uint32_t);
+        return sizeof(uint16_t);
     }
 
     //[HEADER]
@@ -82,8 +82,9 @@ struct ConsistentChannelSpectrum32
     quint32 arrayLength{};
     quint16 spectrumType{};
     quint16 paddingLength{};
-    std::vector<qint32> array{};
+    std::vector<qint16> array{};
     quint16 checksum{};
 };
 
 } // namespace network
+

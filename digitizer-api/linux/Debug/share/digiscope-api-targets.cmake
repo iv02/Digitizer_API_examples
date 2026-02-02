@@ -3,11 +3,11 @@
 if("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" LESS 2.8)
    message(FATAL_ERROR "CMake >= 2.8.0 required")
 endif()
-if(CMAKE_VERSION VERSION_LESS "3.0.0")
-   message(FATAL_ERROR "CMake >= 3.0.0 required")
+if(CMAKE_VERSION VERSION_LESS "2.8.3")
+   message(FATAL_ERROR "CMake >= 2.8.3 required")
 endif()
 cmake_policy(PUSH)
-cmake_policy(VERSION 3.0.0...3.28)
+cmake_policy(VERSION 2.8.3...3.26)
 #----------------------------------------------------------------
 # Generated CMake target import file.
 #----------------------------------------------------------------
@@ -90,7 +90,7 @@ if(NOT CMAKE_VERSION VERSION_LESS "3.23.0")
       FILE_SET "HEADERS"
       TYPE "HEADERS"
       BASE_DIRS "${_IMPORT_PREFIX}/include/event-packet"
-      FILES "${_IMPORT_PREFIX}/include/event-packet/buffers/packetbuffer.h" "${_IMPORT_PREFIX}/include/event-packet/buffers/packetparser.h" "${_IMPORT_PREFIX}/include/event-packet/buffers/splituppacketassembler.h" "${_IMPORT_PREFIX}/include/event-packet/buffers/wavewaveformseparator.h" "${_IMPORT_PREFIX}/include/event-packet/packets/consistentchannelspectrum16.h" "${_IMPORT_PREFIX}/include/event-packet/packets/consistentchannelspectrum32.h" "${_IMPORT_PREFIX}/include/event-packet/packets/detectron2dnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packets/detectronstatisticnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packets/eventpackettype.h" "${_IMPORT_PREFIX}/include/event-packet/packets/phanetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packets/psdnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packets/spectrumtype.h" "${_IMPORT_PREFIX}/include/event-packet/packets/waveformnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packetwrappers/eventdata.h" "${_IMPORT_PREFIX}/include/event-packet/packetwrappers/eventpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packetwrappers/eventpacketheader.h"
+      FILES "${_IMPORT_PREFIX}/include/event-packet/buffers/bufferprocessor.h" "${_IMPORT_PREFIX}/include/event-packet/buffers/packetbuffer.h" "${_IMPORT_PREFIX}/include/event-packet/buffers/packetbuffer.inl" "${_IMPORT_PREFIX}/include/event-packet/buffers/packetparser.h" "${_IMPORT_PREFIX}/include/event-packet/buffers/packetparserworker.h" "${_IMPORT_PREFIX}/include/event-packet/buffers/splituppacketassembler.h" "${_IMPORT_PREFIX}/include/event-packet/buffers/wavewaveformseparator.h" "${_IMPORT_PREFIX}/include/event-packet/packets/detectron2dnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packets/detectronstatisticnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packets/devicespectrum16.h" "${_IMPORT_PREFIX}/include/event-packet/packets/devicespectrum32.h" "${_IMPORT_PREFIX}/include/event-packet/packets/eventpackettype.h" "${_IMPORT_PREFIX}/include/event-packet/packets/phanetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packets/psdnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packets/psdnetworkpacketv2.h" "${_IMPORT_PREFIX}/include/event-packet/packets/spectrumtype.h" "${_IMPORT_PREFIX}/include/event-packet/packets/waveformnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packetwrappers/eventdata.h" "${_IMPORT_PREFIX}/include/event-packet/packetwrappers/eventpacket.h" "${_IMPORT_PREFIX}/include/event-packet/packetwrappers/eventpacketheader.h"
   )
 else()
   set_property(TARGET digiscope-api::event-packet
@@ -151,6 +151,10 @@ add_library(digiscope-api::valijson_interface INTERFACE IMPORTED)
 # Create imported target digiscope-api::rapidjson_interface
 add_library(digiscope-api::rapidjson_interface INTERFACE IMPORTED)
 
+if(CMAKE_VERSION VERSION_LESS 3.0.0)
+  message(FATAL_ERROR "This file relies on consumers using CMake 3.0.0 or greater.")
+endif()
+
 # Load information for each installed configuration.
 file(GLOB _cmake_config_files "${CMAKE_CURRENT_LIST_DIR}/digiscope-api-targets-*.cmake")
 foreach(_cmake_config_file IN LISTS _cmake_config_files)
@@ -164,12 +168,9 @@ set(_IMPORT_PREFIX)
 
 # Loop over all imported files and verify that they actually exist
 foreach(_cmake_target IN LISTS _cmake_import_check_targets)
-  if(CMAKE_VERSION VERSION_LESS "3.28"
-      OR NOT DEFINED _cmake_import_check_xcframework_for_${_cmake_target}
-      OR NOT IS_DIRECTORY "${_cmake_import_check_xcframework_for_${_cmake_target}}")
-    foreach(_cmake_file IN LISTS "_cmake_import_check_files_for_${_cmake_target}")
-      if(NOT EXISTS "${_cmake_file}")
-        message(FATAL_ERROR "The imported target \"${_cmake_target}\" references the file
+  foreach(_cmake_file IN LISTS "_cmake_import_check_files_for_${_cmake_target}")
+    if(NOT EXISTS "${_cmake_file}")
+      message(FATAL_ERROR "The imported target \"${_cmake_target}\" references the file
    \"${_cmake_file}\"
 but this file does not exist.  Possible reasons include:
 * The file was deleted, renamed, or moved to another location.
@@ -178,9 +179,8 @@ but this file does not exist.  Possible reasons include:
    \"${CMAKE_CURRENT_LIST_FILE}\"
 but not all the files it references.
 ")
-      endif()
-    endforeach()
-  endif()
+    endif()
+  endforeach()
   unset(_cmake_file)
   unset("_cmake_import_check_files_for_${_cmake_target}")
 endforeach()

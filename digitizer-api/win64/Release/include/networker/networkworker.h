@@ -9,6 +9,7 @@
 #include <QObject>
 #include <QUuid>
 #include <map>
+#include <vector>
 
 class DiscoverBroadcastMessage;
 class QUdpSocket;
@@ -54,10 +55,10 @@ class NetworkWorker : public QObject
   private slots:
     void onConnectionLost(int64_t id) noexcept;
     void onDiscoverLostTimeout() noexcept;
-    void onDataReceivedEvent(const std::any &packet) const;
+    void onDataReceivedEvent(const std::vector<std::any> &packets) const;
 
   private:
-    void addToBuffer(QSharedPointer<EventPacket> info, QSharedPointer<EventPacket> waveform) const;
+    void addToBuffer(const QSharedPointer<EventPacket> &info, const QSharedPointer<EventPacket> &waveform) const;
     std::optional<quint16> deviceDataPort(int64_t deviceId) const;
     void setupSockets();
     void setupConnections();

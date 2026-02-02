@@ -13,8 +13,9 @@ enum class EventPacketType : quint8 {
     Detectron2DData = 5,
     DetectronStatisticData = 6,
     SplitUpWaveform = 7,
-    ConsistentChannelSpectrum16 = 8,
-    ConsistentChannelSpectrum32 = 9,
+    DeviceSpectrum16 = 8,
+    DeviceSpectrum32 = 9,
+    PsdEventInfoV2 = 10,
     InvalidEventInfo = 255
 };
 } // namespace network

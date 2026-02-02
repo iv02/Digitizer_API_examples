@@ -2,10 +2,11 @@
 
 #include "eventpacketheader.h"
 
-#include "packets/consistentchannelspectrum16.h"
-#include "packets/consistentchannelspectrum32.h"
+#include "packets/devicespectrum16.h"
+#include "packets/devicespectrum32.h"
 #include "packets/phanetworkpacket.h"
 #include "packets/psdnetworkpacket.h"
+#include "packets/psdnetworkpacketv2.h"
 #include "packets/waveformnetworkpacket.h"
 
 #include "packets/spectrumtype.h"
@@ -83,7 +84,22 @@ class PsdEventPacket final : public EventPacket
     PsdEventPacket() = default;
     PsdEventPacket(const PsdNetworkPacket &packet)
     {
-        m_header = {.deviceId = packet.deviceId, .packetType = packet.packetType, .flags = packet.flags, .channelId = packet.channelId, .rtc = packet.rtc};
+        m_header = {
+            .deviceId = packet.deviceId, .packetType = EventPacketType::PsdEventInfo, .flags = packet.flags, .channelId = packet.channelId, .rtc = packet.rtc};
+        m_qShort = packet.qShort;
+        m_qLong = packet.qLong;
+        m_cfdY1 = packet.cfdY1;
+        m_cfdY2 = packet.cfdY2;
+        m_baseline = packet.baseline;
+        m_height = packet.height;
+        m_eventCounter = packet.eventCounter;
+        m_eventCounterPsd = packet.eventCounterPsd;
+        m_psdValue = packet.psdValue;
+    }
+    PsdEventPacket(const PsdNetworkPacketV2 &packet)
+    {
+        m_header = {
+            .deviceId = packet.deviceId, .packetType = EventPacketType::PsdEventInfo, .flags = packet.flags, .channelId = packet.channelId, .rtc = packet.rtc};
         m_qShort = packet.qShort;
         m_qLong = packet.qLong;
         m_cfdY1 = packet.cfdY1;
@@ -176,7 +192,7 @@ class SpectrumEventPacket : public EventPacket
     Q_OBJECT
   public:
     SpectrumEventPacket() = default;
-    SpectrumEventPacket(const ConsistentChannelSpectrum16 &packet)
+    SpectrumEventPacket(const DeviceSpectrum16 &packet)
     {
         m_header = {.deviceId = packet.deviceId, .packetType = packet.packetType, .flags = packet.flags, .channelId = packet.channelId, .rtc = packet.rtc};
         m_spectrumType = static_cast<SpectrumType>(packet.spectrumType);
@@ -187,7 +203,7 @@ class SpectrumEventPacket : public EventPacket
         std::ranges::transform(packet.array, std::back_inserter(m_spectrum), [](auto v) { return static_cast<qint32>(v); });
     }
 
-    SpectrumEventPacket(const ConsistentChannelSpectrum32 &packet)
+    SpectrumEventPacket(const DeviceSpectrum32 &packet)
     {
         m_header = {.deviceId = packet.deviceId, .packetType = packet.packetType, .flags = packet.flags, .channelId = packet.channelId, .rtc = packet.rtc};
         m_spectrumType = static_cast<SpectrumType>(packet.spectrumType);

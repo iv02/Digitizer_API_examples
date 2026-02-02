@@ -35,20 +35,28 @@ struct SettingItem
      * FOR COMBOBOX
      * values["default"] = default;
      * values["values"] = QVariantMap{{"title1", value1}, {"title2", value2}... };
+     * values["base"] = "uint8_t";
+     * values["type"] = "integer";
      *
      * FOR INT LINE EDIT
      * values["default"] = default;
      * values["type"] = "integer";
      * values["base"] = "uint32_t";
      * values["minimum"] = minValue;
-     * values["maximum"] = "maxvalue";
+     * values["maximum"] = maxValue;
      *
      * FOR FLOAT LINE EDIT
      * values["default"] = default;
      * values["type"] = "number";
      * values["decimals"] = numberOfDecimals;
-     * values["minimum"] = minValue;
-     * values["maximum"] = "maxvalue";
+     * values["minimum"] = minValue;              // Actual minimum value (from exclusiveMinimum or inclusiveMinimum)
+     * values["maximum"] = maxValue;              // Actual maximum value (from exclusiveMaximum or inclusiveMaximum)
+     * values["isInclusiveMin"] = isInclusiveMin; // true if inclusiveMinimum was used, false if exclusiveMinimum
+     * values["isInclusiveMax"] = isInclusiveMax; // true if inclusiveMaximum was used, false if exclusiveMaximum
+     * Note: All 4 fields (exclusiveMinimum, inclusiveMinimum, exclusiveMaximum, inclusiveMaximum) can be used
+     *       in any combination (e.g., inclusiveMinimum with exclusiveMaximum), but cannot use both
+     *       exclusiveMinimum and inclusiveMinimum simultaneously, and cannot use both exclusiveMaximum
+     *       and inclusiveMaximum simultaneously.
      *
      * FOR INT SPIN BOX
      * values["default"] = default;
@@ -56,14 +64,20 @@ struct SettingItem
      * values["base"] = "uint32_t";
      * values["step"] = singleStepValue;
      * values["minimum"] = minValue;
-     * values["maximum"] = "maxvalue";
+     * values["maximum"] = maxValue;
      *
      * FOR FLOAT SPIN BOX
      * values["default"] = default;
      * values["type"] = "number";
      * values["step"] = singleStepValue;
-     * values["minimum"] = minValue;
-     * values["maximum"] = "maxvalue";
+     * values["minimum"] = minValue;              // Actual minimum value (from exclusiveMinimum or inclusiveMinimum)
+     * values["maximum"] = maxValue;              // Actual maximum value (from exclusiveMaximum or inclusiveMaximum)
+     * values["isInclusiveMin"] = isInclusiveMin; // true if inclusiveMinimum was used, false if exclusiveMinimum
+     * values["isInclusiveMax"] = isInclusiveMax; // true if inclusiveMaximum was used, false if exclusiveMaximum
+     * Note: All 4 fields (exclusiveMinimum, inclusiveMinimum, exclusiveMaximum, inclusiveMaximum) can be used
+     *       in any combination (e.g., inclusiveMinimum with exclusiveMaximum), but cannot use both
+     *       exclusiveMinimum and inclusiveMinimum simultaneously, and cannot use both exclusiveMaximum
+     *       and inclusiveMaximum simultaneously.
      */
 };
 } // namespace client
