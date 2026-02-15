@@ -36,6 +36,14 @@ class BufferProcessor final : public QObject
         Flush = 2
     };
 
+    struct Batch
+    {
+        int consumedBytes{};
+        QSharedPointer<QByteArray> bytes;
+        std::shared_ptr<QPromise<void>> promise;
+        std::shared_ptr<std::atomic<int>> remaining;
+    };
+
   public:
     explicit BufferProcessor(PacketBuffer *owner);
     ~BufferProcessor() override = default;
@@ -45,26 +53,20 @@ class BufferProcessor final : public QObject
   public slots:
     void initialize();
     void processChunk(const QByteArray &chunk);
+    void clearBuffer();
 
   private:
     void parseBuffer();
     void finishActiveBatch();
-    void dispatchSlice(EventPacketType type, int offset, int length) const;
     ScanStatus buildSlice(int offset, PacketSlice &outSlice);
+    bool tryDispatchPair(const std::shared_ptr<Batch> &batch, const QVector<PacketSlice> &slices, qsizetype idxA, qsizetype idxB) const;
+    void dispatchBatchSlices(const std::shared_ptr<Batch> &batch, const QVector<PacketSlice> &slices) const;
 
   public slots:
     void onWorkerParsed();
     void onWorkerFailed();
 
   private:
-    struct Batch
-    {
-        int consumedBytes{};
-        QSharedPointer<QByteArray> bytes;
-        std::shared_ptr<QPromise<void>> promise;
-        std::shared_ptr<std::atomic<int>> remaining;
-    };
-
     PacketBuffer *m_owner{};
     QByteArray m_buffer;
     QTimer *m_flushTimer{nullptr};

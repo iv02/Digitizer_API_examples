@@ -29,7 +29,8 @@ enum class EventError
     InvalidDeviceId,
     UnsupportedPacketType,
     ChecksumMismatch,
-    ParseError
+    ParseError,
+    RtcMismatch
 };
 
 template <typename T, auto fieldPtr, typename U>

@@ -8,6 +8,8 @@
 
 #include <QObject>
 #include <QUuid>
+#include <chrono>
+#include <deque>
 #include <map>
 #include <vector>
 
@@ -33,12 +35,10 @@ enum class EventPacketType : uint8_t;
 class EventPacket;
 class MaintainingDeviceConnector;
 class CommandDeviceConnector;
-class PacketPendingBuffer;
 
-class NetworkWorker : public QObject
+class NetworkWorker final : public QObject
 {
     Q_OBJECT
-    using CallbackBuildDevice = std::function<QVariant(const DiscoverBroadcastMessage &message, quint16 port)>;
 
   signals:
     void deviceNetworkEvent(int64_t id, NETWORK_DEVICE_EVENT event, QVariantList parameters) const;
@@ -59,12 +59,27 @@ class NetworkWorker : public QObject
 
   private:
     void addToBuffer(const QSharedPointer<EventPacket> &info, const QSharedPointer<EventPacket> &waveform) const;
+    void expireOldPending() const;
+    void expirePendingToBuffer() const;
     std::optional<quint16> deviceDataPort(int64_t deviceId) const;
     void setupSockets();
     void setupConnections();
     void processPendingDiscoverData();
     void processPendingConnection();
-    void flushBuffer() const;
+    void flushBuffer(bool flushAll = false) const;
+    void cancelMeasurementWithTimeTimer(int64_t id);
+    void onMeasurementStopped(int64_t id);
+    void onMeasurementStarted(int64_t id);
+    void startMeasurementWithTimeTimer(int64_t id, uint durationMs);
+
+    struct PendingEntry
+    {
+        QSharedPointer<EventPacket> packet;
+        quint32 deviceId{};
+        quint16 channelId{};
+        quint64 rtc{};
+        std::chrono::steady_clock::time_point addedAt{};
+    };
 
   private:
     QUdpSocket *m_discover{nullptr};
@@ -75,14 +90,18 @@ class NetworkWorker : public QObject
     std::map<int64_t, client::Threaded<CommandDeviceConnector>> m_commandConnectors{};
     std::map<int64_t, QSharedPointer<PacketBuffer>> m_buffers{};
     std::map<quint16, int64_t> m_ports{};
+    std::map<int64_t, QTimer *> m_measurementWithTimeTimers{};
 
     std::map<int64_t, std::chrono::time_point<std::chrono::steady_clock>> m_discoverTimes{};
     QTimer *m_discoverLostTimer;
 
     std::map<int64_t, QSharedPointer<EventPacket>> m_packetStorage{};
 
-    mutable QVector<EventData> m_dataBuffer{};
+    mutable std::deque<EventData> m_dataBuffer{};
+    mutable std::deque<PendingEntry> m_pendingInfo{};
+    mutable std::deque<PendingEntry> m_pendingWave{};
     QTimer *m_flushTimer{nullptr};
+    QTimer *m_pendingExpiryTimer{nullptr};
     bool m_useBatchMode{false};
 };
 } // namespace network

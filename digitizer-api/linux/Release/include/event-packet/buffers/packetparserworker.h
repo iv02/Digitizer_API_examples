@@ -1,38 +1,13 @@
 #pragma once
 
-#include "packetparser.h"
+#include "packetparserworkerbase.h"
 
-#include <QObject>
-#include <QPair>
 #include <QQueue>
 #include <QSharedPointer>
-#include <QVector>
-#include <any>
 #include <memory>
 
 namespace network
 {
-
-using Slice = QPair<int, int>;
-using SliceVec = QVector<Slice>;
-
-class PacketParserWorkerBase : public QObject
-{
-    Q_OBJECT
-  public:
-    explicit PacketParserWorkerBase(QObject *parent = nullptr) : QObject(parent)
-    {
-    }
-    ~PacketParserWorkerBase() override = default;
-
-  signals:
-    void parsed(const std::any &packet, EventPacketType type, const QByteArray &raw) const;
-    void parseFailed(EventError error, EventPacketType type) const;
-
-  public slots:
-    virtual void parseBytes(const QByteArray &bytes) = 0;
-    virtual void enqueueSlices(const QSharedPointer<QByteArray> &buffer, const SliceVec &slices) = 0;
-};
 
 template <typename T> class PacketParserWorker final : public PacketParserWorkerBase
 {
@@ -48,12 +23,12 @@ template <typename T> class PacketParserWorker final : public PacketParserWorker
     void parseBytes(const QByteArray &bytes) override
     {
         auto shared = QSharedPointer<QByteArray>::create(bytes);
-        SliceVec slices;
+        QVector<QPair<int, int>> slices;
         slices.push_back(qMakePair(0, static_cast<int>(shared->size())));
         enqueueSlices(shared, slices);
     }
 
-    void enqueueSlices(const QSharedPointer<QByteArray> &buffer, const SliceVec &slices) override
+    void enqueueSlices(const QSharedPointer<QByteArray> &buffer, const QVector<QPair<int, int>> &slices) override
     {
         if (!buffer)
         {

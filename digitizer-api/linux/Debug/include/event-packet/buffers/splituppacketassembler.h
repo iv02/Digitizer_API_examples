@@ -26,7 +26,7 @@ class SplitUpPacketAssembler : public QObject
     std::optional<WaveformNetworkPacket> processSplitUpPacket(const WaveformNetworkPacket &packet);
 
   private:
-    std::map<int,std::map<int, WaveformNetworkPacket>> m_data{};
+    std::map<int, std::map<int, WaveformNetworkPacket>> m_data{};
 };
 
 } // namespace network

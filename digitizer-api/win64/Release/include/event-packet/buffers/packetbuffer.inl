@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bufferprocessor.h"
+#include "parserpairworker.h"
 
 #include "packets/detectron2dnetworkpacket.h"
 #include "packets/detectronstatisticnetworkpacket.h"
@@ -49,6 +50,49 @@ template <typename T> void PacketBuffer::addParser(PacketParser<T> *parser)
         {
             connect(worker, &PacketParserWorkerBase::parsed, this, &PacketBuffer::onParsed, Qt::QueuedConnection);
             connect(worker, &PacketParserWorkerBase::parseFailed, this, &PacketBuffer::onParseFailed, Qt::QueuedConnection);
+        }
+        connect(thread.get(), &QThread::finished, worker, &QObject::deleteLater);
+
+        thread->start();
+
+        pool.workers.push_back(static_cast<void *>(worker));
+        pool.threads.push_back(std::move(thread));
+    }
+}
+
+template <typename InfoT, typename WaveT> void PacketBuffer::addParserPair(PacketParser<InfoT> *infoParser, PacketParser<WaveT> *waveParser)
+{
+    if (!infoParser || !waveParser)
+        return;
+
+    infoParser->setDeviceId(m_deviceId);
+    waveParser->setDeviceId(m_deviceId);
+
+    const auto infoType = infoParser->packetType();
+    const auto waveType = waveParser->packetType();
+    const ParserPairKey key(infoType, waveType);
+    const int poolSize = m_parserPoolSize;
+    auto &pool = m_parserPairPools[key];
+
+    for (int i = 0; i < poolSize; ++i)
+    {
+        auto infoParserInstance = (i == 0) ? infoParser : new PacketParser<InfoT>(infoType);
+        auto waveParserInstance = (i == 0) ? waveParser : new PacketParser<WaveT>(waveType);
+        infoParserInstance->setDeviceId(m_deviceId);
+        waveParserInstance->setDeviceId(m_deviceId);
+
+        auto worker = new ParserPairWorker<InfoT, WaveT>(std::unique_ptr<PacketParser<InfoT>>(infoParserInstance),
+                                                         std::unique_ptr<PacketParser<WaveT>>(waveParserInstance));
+
+        auto thread = std::make_unique<QThread>();
+        worker->moveToThread(thread.get());
+
+        connect(worker, &PacketParserWorkerBase::parsed, this, &PacketBuffer::onParsed, Qt::QueuedConnection);
+        connect(worker, &PacketParserWorkerBase::parseFailed, this, &PacketBuffer::onParseFailed, Qt::QueuedConnection);
+        if (m_bufferWorker)
+        {
+            connect(worker, &PacketParserWorkerBase::parsed, m_bufferWorker.get(), &BufferProcessor::onWorkerParsed, Qt::QueuedConnection);
+            connect(worker, &PacketParserWorkerBase::parseFailed, m_bufferWorker.get(), &BufferProcessor::onWorkerFailed, Qt::QueuedConnection);
         }
         connect(thread.get(), &QThread::finished, worker, &QObject::deleteLater);
 
@@ -210,28 +254,6 @@ template <typename T> void PacketBuffer::dispatchToWorker(EventPacketType type, 
     QMetaObject::invokeMethod(worker, "parseBytes", Qt::QueuedConnection, Q_ARG(QByteArray, raw));
 }
 
-inline void PacketBuffer::dispatchToWorkerRaw(EventPacketType type, const QByteArray &raw) const
-{
-    const auto poolIt = m_parserPools.find(type);
-    if (poolIt == m_parserPools.end() || poolIt->second.workers.empty())
-    {
-        qWarning() << "Parser pool has no entry for type" << static_cast<int>(type);
-        return;
-    }
-
-    auto &pool = poolIt->second;
-    const auto idx = pool.nextIndex % static_cast<int>(pool.workers.size());
-    pool.nextIndex = (pool.nextIndex + 1) % static_cast<int>(pool.workers.size());
-    auto *worker = static_cast<PacketParserWorkerBase *>(pool.workers[idx]);
-    if (!worker)
-    {
-        qWarning() << "Parser worker is null for type" << static_cast<int>(type);
-        return;
-    }
-
-    QMetaObject::invokeMethod(worker, "parseBytes", Qt::QueuedConnection, Q_ARG(QByteArray, raw));
-}
-
 inline void PacketBuffer::dispatchToWorkerSlice(EventPacketType type, const QSharedPointer<QByteArray> &buffer, int offset, int length) const
 {
     const auto poolIt = m_parserPools.find(type);
@@ -251,12 +273,12 @@ inline void PacketBuffer::dispatchToWorkerSlice(EventPacketType type, const QSha
         return;
     }
 
-    SliceVec one;
+    QVector<QPair<int, int>> one;
     one.push_back(qMakePair(offset, length));
-    QMetaObject::invokeMethod(worker, "enqueueSlices", Qt::QueuedConnection, Q_ARG(QSharedPointer<QByteArray>, buffer), Q_ARG(SliceVec, one));
+    QMetaObject::invokeMethod(worker, "enqueueSlices", Qt::QueuedConnection, Q_ARG(QSharedPointer<QByteArray>, buffer), Q_ARG(network::SliceVecMeta, one));
 }
 
-inline void PacketBuffer::dispatchToWorkerSlices(EventPacketType type, const QSharedPointer<QByteArray> &buffer, const SliceVec &slices) const
+inline void PacketBuffer::dispatchToWorkerSlices(EventPacketType type, const QSharedPointer<QByteArray> &buffer, const QVector<QPair<int, int>> &slices) const
 {
     const auto poolIt = m_parserPools.find(type);
     if (poolIt == m_parserPools.end() || poolIt->second.workers.empty())
@@ -270,8 +292,8 @@ inline void PacketBuffer::dispatchToWorkerSlices(EventPacketType type, const QSh
     if (workerCount <= 0)
         return;
 
-    QVector<SliceVec> buckets(workerCount);
-    buckets.fill(SliceVec{});
+    QVector<QVector<QPair<int, int>>> buckets(workerCount);
+    buckets.fill(QVector<QPair<int, int>>{});
     for (const auto &p : slices)
     {
         const int idx = pool.nextIndex % workerCount;
@@ -287,8 +309,86 @@ inline void PacketBuffer::dispatchToWorkerSlices(EventPacketType type, const QSh
         if (!worker)
             continue;
 
-        QMetaObject::invokeMethod(worker, "enqueueSlices", Qt::QueuedConnection, Q_ARG(QSharedPointer<QByteArray>, buffer), Q_ARG(SliceVec, buckets[i]));
+        QMetaObject::invokeMethod(worker, "enqueueSlices", Qt::QueuedConnection, Q_ARG(QSharedPointer<QByteArray>, buffer),
+                                  Q_ARG(network::SliceVecMeta, buckets[i]));
     }
+}
+
+inline bool PacketBuffer::hasParserForType(EventPacketType type) const
+{
+    if (m_parserPools.contains(type))
+        return true;
+    for (auto it = m_parserPairPools.cbegin(); it != m_parserPairPools.cend(); ++it)
+    {
+        if (it->first.first == type || it->first.second == type)
+            return true;
+    }
+    return false;
+}
+
+inline bool PacketBuffer::hasParserPair(EventPacketType infoType, EventPacketType waveType) const
+{
+    return m_parserPairPools.contains(ParserPairKey(infoType, waveType));
+}
+
+inline std::optional<ParserPairKey> PacketBuffer::getParserPairForType(EventPacketType type) const
+{
+    for (auto it = m_parserPairPools.cbegin(); it != m_parserPairPools.cend(); ++it)
+    {
+        if (it->first.first == type || it->first.second == type)
+            return it->first;
+    }
+    return std::nullopt;
+}
+
+inline void PacketBuffer::dispatchToPairWorker(EventPacketType infoType, EventPacketType waveType, const QSharedPointer<QByteArray> &buffer, int infoOffset,
+                                               int infoLength, int waveOffset, int waveLength) const
+{
+    const auto key = ParserPairKey(infoType, waveType);
+    const auto poolIt = m_parserPairPools.find(key);
+    if (poolIt == m_parserPairPools.end() || poolIt->second.workers.empty())
+    {
+        qWarning() << "Parser pair pool has no entry for" << static_cast<int>(infoType) << static_cast<int>(waveType);
+        return;
+    }
+
+    auto &pool = poolIt->second;
+    const auto idx = pool.nextIndex % static_cast<int>(pool.workers.size());
+    pool.nextIndex = (pool.nextIndex + 1) % static_cast<int>(pool.workers.size());
+    auto *worker = static_cast<PacketParserWorkerBase *>(pool.workers[idx]);
+    if (!worker)
+    {
+        qWarning() << "Parser pair worker is null";
+        return;
+    }
+
+    QMetaObject::invokeMethod(worker, "enqueuePairJob", Qt::QueuedConnection, Q_ARG(QSharedPointer<QByteArray>, buffer), Q_ARG(int, infoOffset),
+                              Q_ARG(int, infoLength), Q_ARG(int, waveOffset), Q_ARG(int, waveLength));
+}
+
+inline void PacketBuffer::dispatchToPairWorkerSingle(EventPacketType infoType, EventPacketType waveType, const QSharedPointer<QByteArray> &buffer, int offset,
+                                                     int length, bool isInfo) const
+{
+    const auto key = ParserPairKey(infoType, waveType);
+    const auto poolIt = m_parserPairPools.find(key);
+    if (poolIt == m_parserPairPools.end() || poolIt->second.workers.empty())
+    {
+        qWarning() << "Parser pair pool has no entry for" << static_cast<int>(infoType) << static_cast<int>(waveType);
+        return;
+    }
+
+    auto &pool = poolIt->second;
+    const auto idx = pool.nextIndex % static_cast<int>(pool.workers.size());
+    pool.nextIndex = (pool.nextIndex + 1) % static_cast<int>(pool.workers.size());
+    auto *worker = static_cast<PacketParserWorkerBase *>(pool.workers[idx]);
+    if (!worker)
+    {
+        qWarning() << "Parser pair worker is null";
+        return;
+    }
+
+    QMetaObject::invokeMethod(worker, "enqueueSingleJob", Qt::QueuedConnection, Q_ARG(QSharedPointer<QByteArray>, buffer), Q_ARG(int, offset),
+                              Q_ARG(int, length), Q_ARG(bool, isInfo));
 }
 
 } // namespace network
