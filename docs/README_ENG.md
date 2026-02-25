@@ -448,6 +448,90 @@ if (interactor.downloadSettings(deviceId)) {
 }
 ```
 
+## 4.4 Configuration Files (`.dconf`)
+
+Digitizer API supports export/import/apply operations for `.dconf` configuration files.
+
+### API Methods
+
+- `bool writeConfigurationFile(int64_t id, const QString &path) const`
+  - Exports current cached firmware schema/settings of a device to `.dconf`.
+  - Returns `false` if device/settings are unavailable or file write fails.
+
+- `ConfigurationFileResult readConfigurationFile(const QString &path) const`
+  - Validates `.dconf` file accessibility and binary format without applying it.
+  - Returns only operation status + message.
+  - Security rule: schema/settings payload is not exposed to API user.
+
+- `ConfigurationFileResult applyConfigurationFile(int64_t id, const QString &path)`
+  - Applies `.dconf` to selected device with cross-schema validation.
+  - Validation is done against:
+    - active schema of target device,
+    - schema stored inside `.dconf`,
+    - initialized model sections in wrapper.
+
+### Statuses (`ConfigurationFileStatus`)
+
+- `FileOpenError`
+- `FileFormatInvalid`
+- `SchemaNotInitialized`
+- `SettingsSchemaMismatch`
+- `DeviceNotReady`
+- `Applied`
+
+### Example: Export current configuration to `.dconf`
+
+```cpp
+digi::DigitizerInteractor interactor;
+const int64_t deviceId = 123456789;
+const QString filePath = "C:/configs/device_123456789.dconf";
+
+if (interactor.connectDevice(deviceId) && interactor.downloadSettings(deviceId)) {
+    if (!interactor.writeConfigurationFile(deviceId, filePath)) {
+        qWarning() << "Failed to export .dconf file";
+    } else {
+        qDebug() << "Configuration exported to:" << filePath;
+    }
+}
+```
+
+### Example: Validate `.dconf` file (without apply)
+
+```cpp
+digi::DigitizerInteractor interactor;
+const QString filePath = "C:/configs/device_123456789.dconf";
+
+const auto result = interactor.readConfigurationFile(filePath);
+if (result.status != digi::ConfigurationFileStatus::Applied) {
+    qWarning() << "Validation failed:" << result.message;
+} else {
+    qDebug() << ".dconf file is valid and readable";
+}
+```
+
+### Example: Apply `.dconf` to device
+
+```cpp
+digi::DigitizerInteractor interactor;
+const int64_t deviceId = 123456789;
+const QString filePath = "C:/configs/foreign_device_config.dconf";
+
+if (interactor.connectDevice(deviceId) && interactor.downloadSettings(deviceId)) {
+    const auto applyResult = interactor.applyConfigurationFile(deviceId, filePath);
+    switch (applyResult.status) {
+    case digi::ConfigurationFileStatus::Applied:
+        qDebug() << "Configuration applied successfully";
+        break;
+    case digi::ConfigurationFileStatus::SettingsSchemaMismatch:
+        qWarning() << "Configuration is incompatible with current device schema/models";
+        break;
+    default:
+        qWarning() << "Apply failed:" << applyResult.message;
+        break;
+    }
+}
+```
+
 ## 5. Settings Management
 
 Settings Management API includes parameter discovery and parameter access methods.

@@ -448,6 +448,90 @@ if (interactor.downloadSettings(deviceId)) {
 }
 ```
 
+### 4.4 Конфигурационные файлы (`.dconf`)
+
+Digitizer API поддерживает экспорт/чтение/применение конфигураций в формате `.dconf`.
+
+#### Методы API
+
+- `bool writeConfigurationFile(int64_t id, const QString &path) const`
+  - Экспортирует текущую закэшированную схему и настройки устройства в `.dconf`.
+  - Возвращает `false`, если устройство/настройки недоступны или не удалось записать файл.
+
+- `ConfigurationFileResult readConfigurationFile(const QString &path) const`
+  - Проверяет доступность и бинарный формат `.dconf` без применения к устройству.
+  - Возвращает только статус операции + сообщение.
+  - Правило безопасности: payload schema/settings пользователю API не выдаётся.
+
+- `ConfigurationFileResult applyConfigurationFile(int64_t id, const QString &path)`
+  - Применяет `.dconf` к выбранному устройству с перекрестной проверкой схем.
+  - Проверка выполняется относительно:
+    - активной схемы целевого устройства,
+    - схемы, записанной внутри `.dconf`,
+    - инициализированных секций моделей в wrapper.
+
+#### Статусы (`ConfigurationFileStatus`)
+
+- `FileOpenError`
+- `FileFormatInvalid`
+- `SchemaNotInitialized`
+- `SettingsSchemaMismatch`
+- `DeviceNotReady`
+- `Applied`
+
+#### Пример: экспорт текущей конфигурации в `.dconf`
+
+```cpp
+digi::DigitizerInteractor interactor;
+const int64_t deviceId = 123456789;
+const QString filePath = "C:/configs/device_123456789.dconf";
+
+if (interactor.connectDevice(deviceId) && interactor.downloadSettings(deviceId)) {
+    if (!interactor.writeConfigurationFile(deviceId, filePath)) {
+        qWarning() << "Не удалось экспортировать .dconf";
+    } else {
+        qDebug() << "Конфигурация экспортирована в:" << filePath;
+    }
+}
+```
+
+#### Пример: проверка `.dconf` (без применения)
+
+```cpp
+digi::DigitizerInteractor interactor;
+const QString filePath = "C:/configs/device_123456789.dconf";
+
+const auto result = interactor.readConfigurationFile(filePath);
+if (result.status != digi::ConfigurationFileStatus::Applied) {
+    qWarning() << "Проверка не пройдена:" << result.message;
+} else {
+    qDebug() << ".dconf файл корректен и доступен для чтения";
+}
+```
+
+#### Пример: применение `.dconf` к устройству
+
+```cpp
+digi::DigitizerInteractor interactor;
+const int64_t deviceId = 123456789;
+const QString filePath = "C:/configs/foreign_device_config.dconf";
+
+if (interactor.connectDevice(deviceId) && interactor.downloadSettings(deviceId)) {
+    const auto applyResult = interactor.applyConfigurationFile(deviceId, filePath);
+    switch (applyResult.status) {
+    case digi::ConfigurationFileStatus::Applied:
+        qDebug() << "Конфигурация успешно применена";
+        break;
+    case digi::ConfigurationFileStatus::SettingsSchemaMismatch:
+        qWarning() << "Конфигурация несовместима с текущей схемой/моделями устройства";
+        break;
+    default:
+        qWarning() << "Применение не выполнено:" << applyResult.message;
+        break;
+    }
+}
+```
+
 ## 5. Управление настройками
 
 API управления настройками включает методы обнаружения параметров и доступа к параметрам.
