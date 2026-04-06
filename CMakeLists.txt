@@ -39,4 +39,7 @@ endif()
 
 find_package(Qt6 REQUIRED COMPONENTS Core Network StateMachine)
 
+enable_testing()
+
 add_subdirectory(src)
+add_subdirectory(tests)
