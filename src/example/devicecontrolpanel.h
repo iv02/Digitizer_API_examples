@@ -31,6 +31,7 @@ class DeviceControlPanel : public QWidget
   signals:
     void deviceSelectionChanged(int64_t deviceId);
     void deviceConnected(int64_t deviceId);
+    void configurationApplied();
 
   private slots:
     void onDeviceDiscovered(int64_t deviceId);
@@ -43,6 +44,8 @@ class DeviceControlPanel : public QWidget
     void onLogFirmwareSettings();
     void onUploadSettings();
     void onDownloadSettings();
+    void onConfigDownloadToFile();
+    void onConfigUploadFromFile();
 
   private:
     void setupUi();
@@ -58,6 +61,7 @@ class DeviceControlPanel : public QWidget
 
     QMenuBar *m_menuBar;
     QMenu *m_deviceMenu;
+    QMenu *m_configMenu;
     QMenu *m_settingsMenu;
     QMenu *m_logMenu;
     
@@ -68,6 +72,8 @@ class DeviceControlPanel : public QWidget
     QAction *m_actionShowFirmwareSettings;
     QAction *m_actionUploadSettings;
     QAction *m_actionDownloadSettings;
+    QAction *m_actionConfigDownload;
+    QAction *m_actionConfigUpload;
     QAction *m_actionClearLog;
 };
 

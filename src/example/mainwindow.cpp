@@ -87,6 +87,9 @@ void MainWindow::setupConnections()
                     m_settingsPanel->refreshFwTypeButtons();
                 }
             });
+    connect(m_deviceControlPanel, &DeviceControlPanel::configurationApplied, this, [this]() {
+        m_settingsPanel->refreshFwTypeButtons();
+    });
 
     m_digitizerInteractor->setDataEventCallback([this](const network::EventData &eventData) {
         QMetaObject::invokeMethod(this, [this, eventData]() {

@@ -452,6 +452,8 @@ if (interactor.downloadSettings(deviceId)) {
 
 Digitizer API supports export/import/apply operations for `.dconf` configuration files.
 
+In the `digitizer-example` application, use the device panel menu bar: after **Device**, open **Configuration → Download configuration (.dconf)…** (calls `writeConfigurationFile`) and **Configuration → Upload configuration (.dconf)…** (calls `applyConfigurationFile`) for the currently selected device.
+
 ### API Methods
 
 - `bool writeConfigurationFile(int64_t id, const QString &path) const`

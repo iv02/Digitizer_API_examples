@@ -1,8 +1,10 @@
 #include "devicecontrolpanel.h"
 #include "digitizerinteractor.h"
 
+#include <QFileDialog>
 #include <QHeaderView>
 #include <QJsonDocument>
+#include <QMessageBox>
 #include <QMenuBar>
 #include <QMenu>
 #include <QAction>
@@ -120,6 +122,15 @@ void DeviceControlPanel::setupUi()
     m_deviceMenu->addSeparator();
     m_actionStartMeasure = m_deviceMenu->addAction("Start measure");
     m_actionStopMeasure = m_deviceMenu->addAction("Stop measure");
+
+    m_configMenu = m_menuBar->addMenu(tr("Configuration"));
+    m_actionConfigDownload = m_configMenu->addAction(tr("Download configuration (.dconf)…"));
+    m_actionConfigDownload->setToolTip(
+        tr("Export current cached firmware settings to a .dconf file (writeConfigurationFile). "
+           "Device must be connected; settings should be downloaded first."));
+    m_actionConfigUpload = m_configMenu->addAction(tr("Upload configuration (.dconf)…"));
+    m_actionConfigUpload->setToolTip(tr("Apply a .dconf file to the selected device (applyConfigurationFile). "
+                                        "Device must be connected."));
     
     m_settingsMenu = m_menuBar->addMenu("Settings");
     m_actionShowFirmwareSettings = m_settingsMenu->addAction("Show FW Settings");
@@ -151,6 +162,8 @@ void DeviceControlPanel::setupConnections()
     connect(m_actionShowFirmwareSettings, &QAction::triggered, this, &DeviceControlPanel::onLogFirmwareSettings);
     connect(m_actionUploadSettings, &QAction::triggered, this, &DeviceControlPanel::onUploadSettings);
     connect(m_actionDownloadSettings, &QAction::triggered, this, &DeviceControlPanel::onDownloadSettings);
+    connect(m_actionConfigDownload, &QAction::triggered, this, &DeviceControlPanel::onConfigDownloadToFile);
+    connect(m_actionConfigUpload, &QAction::triggered, this, &DeviceControlPanel::onConfigUploadFromFile);
     connect(m_devicesTable->selectionModel(), &QItemSelectionModel::currentChanged, this,
             &DeviceControlPanel::onDeviceSelectionChanged);
 }
@@ -331,5 +344,87 @@ void DeviceControlPanel::onDownloadSettings()
 
     auto result = m_interactor->downloadSettings(id);
     logMessage(QString("Id %1: Settings download %2").arg(id).arg(result ? "successful" : "failed"));
+}
+
+void DeviceControlPanel::onConfigDownloadToFile()
+{
+    QWidget *dlgParent = window();
+
+    const int64_t id = currentDeviceId();
+    if (id < 0)
+    {
+        QMessageBox::warning(dlgParent, tr("Configuration"), tr("Select a device in the device list."));
+        return;
+    }
+    if (!m_interactor->isDeviceConnected(id))
+    {
+        QMessageBox::warning(dlgParent, tr("Configuration"),
+                             tr("Device is not connected. Connect the device first."));
+        return;
+    }
+    if (!m_interactor->downloadSettings(id))
+    {
+        QMessageBox::warning(dlgParent, tr("Configuration"),
+                             tr("Could not download settings from the device. Export to .dconf is not possible."));
+        return;
+    }
+
+    QString path = QFileDialog::getSaveFileName(
+        dlgParent, tr("Save configuration"), QString(), tr("DigiScope configuration (*.dconf);;All files (*.*)"));
+    if (path.isEmpty())
+        return;
+    if (!path.endsWith(QStringLiteral(".dconf"), Qt::CaseInsensitive))
+        path += QStringLiteral(".dconf");
+
+    if (!m_interactor->writeConfigurationFile(id, path))
+    {
+        QMessageBox::warning(dlgParent, tr("Configuration"),
+                             tr("Failed to write the .dconf file. Check logs and device state."));
+        return;
+    }
+
+    QMessageBox::information(dlgParent, tr("Configuration"),
+                             tr("Configuration exported to:\n%1").arg(path));
+}
+
+void DeviceControlPanel::onConfigUploadFromFile()
+{
+    QWidget *dlgParent = window();
+
+    const int64_t id = currentDeviceId();
+    if (id < 0)
+    {
+        QMessageBox::warning(dlgParent, tr("Configuration"), tr("Select a device in the device list."));
+        return;
+    }
+    if (!m_interactor->isDeviceConnected(id))
+    {
+        QMessageBox::warning(dlgParent, tr("Configuration"),
+                             tr("Device is not connected. Connect the device first."));
+        return;
+    }
+
+    const QString path = QFileDialog::getOpenFileName(
+        dlgParent, tr("Open configuration"), QString(), tr("DigiScope configuration (*.dconf);;All files (*.*)"));
+    if (path.isEmpty())
+        return;
+
+    if (!m_interactor->downloadSettings(id))
+    {
+        QMessageBox::warning(
+            dlgParent, tr("Configuration"),
+            tr("Could not download current settings from the device. Apply may be unreliable."));
+    }
+
+    const digi::ConfigurationFileResult result = m_interactor->applyConfigurationFile(id, path);
+    if (result.status == digi::ConfigurationFileStatus::Applied)
+    {
+        QMessageBox::information(dlgParent, tr("Configuration"), tr("Configuration applied successfully."));
+        emit configurationApplied();
+        return;
+    }
+
+    QMessageBox::warning(dlgParent, tr("Configuration"),
+                         tr("Could not apply configuration.\n%1").arg(result.message));
 }
 

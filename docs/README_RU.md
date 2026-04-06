@@ -452,6 +452,8 @@ if (interactor.downloadSettings(deviceId)) {
 
 Digitizer API поддерживает экспорт/чтение/применение конфигураций в формате `.dconf`.
 
+В приложении `digitizer-example` на панели устройств в строке меню сразу после **Device** доступны **Configuration → Download configuration (.dconf)…** (экспорт, `writeConfigurationFile`) и **Configuration → Upload configuration (.dconf)…** (применение, `applyConfigurationFile`) для выбранного устройства.
+
 #### Методы API
 
 - `bool writeConfigurationFile(int64_t id, const QString &path) const`
