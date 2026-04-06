@@ -8,7 +8,7 @@ namespace client
 {
 class IAbstractSettingsModel;
 enum class ItemState;
-} 
+} // namespace client
 
 namespace device
 {
@@ -39,12 +39,13 @@ class FirmwareSettingsModelRepositoryBase : public QObject
     
     bool validate(int64_t id, const QByteArray &values) const;
     bool validate(const QString &settings, const QString &schema) const;
+    bool validateAgainstInitializedModels(int64_t id, const QString &settings, const QString &activeSchema, const QString &fileSchema) const;
+    bool hasInitializedModels(int64_t id) const;
 
   protected:
     void updateSettings(int64_t id) const;
     virtual void createFirmwareSettingsTableModel(const int64_t &id, const QString &tabItKey, const QJsonObject &tabItValue, const int &channelsNumber);
 
-  protected:
     struct DeviceModelData
     {
         bool isHasModels;

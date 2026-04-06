@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <QMap>
 #include <QString>
@@ -26,15 +26,35 @@ enum class FWType
     Device = 0,
     PHA,
     PSD,
-    WAVEFORM
+    WAVEFORM,
+    SHORT_PHA,
+    SHORT_PSD
 };
 
-constexpr std::array<const char *, 4> FWTypeName 
+enum class ConfigurationFileStatus
+{
+    FileOpenError = 0,
+    FileFormatInvalid,
+    SchemaNotInitialized,
+    SettingsSchemaMismatch,
+    DeviceNotReady,
+    Applied
+};
+
+struct ConfigurationFileResult
+{
+    ConfigurationFileStatus status{ConfigurationFileStatus::FileFormatInvalid};
+    QString message{};
+};
+
+constexpr std::array<const char *, 6> FWTypeName 
 {
     "Device",
     "PHA",
     "PSD", 
-    "WAVEFORM", 
+    "WAVEFORM",
+    "SHORT_PHA",
+    "SHORT_PSD",
 };
 
 class DigitizerInteractor
@@ -170,6 +190,54 @@ class DigitizerInteractor
     std::pair<QString, QString> firmwareSettings(const int64_t &id) const;
 
     /**
+     * Saves firmware settings of the selected device to a `.dconf` file.
+     *
+     * The method reads schema + settings from local cache (`firmwareSettings(id)`)
+     * and writes a binary `.dconf` file via Digitizer API configuration-io module.
+     *
+     * @param id 64-bit device identifier
+     * @param path Absolute/relative path to destination `.dconf` file
+     * @return bool:
+     *         - true: file written successfully
+     *         - false: device/settings are unavailable or file write failed
+     * @note Device must be known and connected, and settings should be downloaded beforehand
+     * @note The resulting file is compatible with DigiScope `.dconf` format
+     * @see readConfigurationFile(), applyConfigurationFile()
+     */
+    bool writeConfigurationFile(int64_t id, const QString &path) const;
+
+    /**
+     * Validates readability and binary format of `.dconf` file without exposing its content.
+     *
+     * @param path Path to source `.dconf` file
+     * @return ConfigurationFileResult:
+     *         - Applied: file is readable and format is valid
+     *         - FileOpenError/FileFormatInvalid: validation failed
+     * @note This method does NOT apply settings to any device
+     * @see writeConfigurationFile(), applyConfigurationFile()
+     */
+    ConfigurationFileResult readConfigurationFile(const QString &path) const;
+
+    /**
+     * Applies settings from `.dconf` file to selected device with cross-schema validation.
+     *
+     * Validation pipeline:
+     * 1) binary dconf format validation
+     * 2) schema initialization check for target device models
+     * 3) settings validation against active device schema and schema stored in file
+     * 4) model-section compatibility check for initialized tabs
+     *
+     * @param id 64-bit target device identifier
+     * @param path Path to source `.dconf` file
+     * @return ConfigurationFileResult:
+     *         - Applied: settings sent to device
+     *         - FileOpenError/FileFormatInvalid/SchemaNotInitialized/SettingsSchemaMismatch/DeviceNotReady
+     * @note On failure settings are NOT sent to device
+     * @see writeConfigurationFile(), readConfigurationFile()
+     */
+    ConfigurationFileResult applyConfigurationFile(int64_t id, const QString &path);
+
+    /**
      * Retrieves the number of available channels for a device.
      *
      * @param id Unique 64-bit device identifier
@@ -257,7 +325,7 @@ class DigitizerInteractor
      * @param fwType Target firmware type that determines column semantics:
      *        - FWType::Device:
      *          * column 1: Current setting value
-     *        - FWType::PHA/PSD/WAVEFORM:
+     *        - FWType::PHA/PSD/WAVEFORM/SHORT_PHA/SHORT_PSD:
      *          * column 0: Default value
      *          * column 1-N: Channel-specific values (where N = channel count)
      * @param name Case-sensitive setting name
@@ -276,7 +344,7 @@ class DigitizerInteractor
      * @param fwType Target firmware type that determines column semantics:
      *        - FWType::Device:
      *          * column 1: Updates current setting value
-     *        - FWType::PHA/PSD/WAVEFORM:
+     *        - FWType::PHA/PSD/WAVEFORM/SHORT_PHA/SHORT_PSD:
      *          * column 0: Updates default value (affects all channels)
      *          * column 1-N: Updates channel-specific values
      * @param name Case-sensitive setting name

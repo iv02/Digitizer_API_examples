@@ -35,6 +35,26 @@ set_target_properties(digiscope-api::networker PROPERTIES
 list(APPEND _cmake_import_check_targets digiscope-api::networker )
 list(APPEND _cmake_import_check_files_for_digiscope-api::networker "${_IMPORT_PREFIX}/lib/libnetworker.a" )
 
+# Import target "digiscope-api::configuration-io" for configuration "Release"
+set_property(TARGET digiscope-api::configuration-io APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+set_target_properties(digiscope-api::configuration-io PROPERTIES
+  IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "CXX"
+  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libconfiguration-io.a"
+  )
+
+list(APPEND _cmake_import_check_targets digiscope-api::configuration-io )
+list(APPEND _cmake_import_check_files_for_digiscope-api::configuration-io "${_IMPORT_PREFIX}/lib/libconfiguration-io.a" )
+
+# Import target "digiscope-api::muparser" for configuration "Release"
+set_property(TARGET digiscope-api::muparser APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+set_target_properties(digiscope-api::muparser PROPERTIES
+  IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "CXX"
+  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libmuparser.a"
+  )
+
+list(APPEND _cmake_import_check_targets digiscope-api::muparser )
+list(APPEND _cmake_import_check_files_for_digiscope-api::muparser "${_IMPORT_PREFIX}/lib/libmuparser.a" )
+
 # Import target "digiscope-api::digitizer-wrapper" for configuration "Release"
 set_property(TARGET digiscope-api::digitizer-wrapper APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(digiscope-api::digitizer-wrapper PROPERTIES

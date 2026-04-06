@@ -1,15 +1,15 @@
 #pragma once
 
-#pragma once
-
 #include "device.h"
 #include "devicemanagerbase.h"
 #include "packetwrappers/eventdata.h"
 
-#include <QAbstractTableModel>
+#include <QAbstractItemModel>
 #include <QObject>
+#include <QSharedPointer>
 #include <QVariantList>
 #include <functional>
+#include <QVector>
 
 #include <api.pb.h>
 
@@ -66,12 +66,12 @@ class DeviceManagerWrapper final : public device::DeviceManagerBase
     QVariant getSetting(int64_t id, QString fwTypeName, QString name, int column) const;
     bool setSetting(int64_t id, QString fwTypeName, const QString &name, int column, const QVariant &value);
 
-    QAbstractTableModel *fwSettingTableModel(int64_t id, QString tabName) const;
+    QAbstractItemModel *fwSettingTableModel(int64_t id, QString tabName) const;
 
   private slots:
     void onDataReceivedEvent(client::DataSource source, const QSharedPointer<network::EventPacket> &info,
                              const QSharedPointer<network::EventPacket> &waveform) const;
-    void onDataReceivedBatch(client::DataSource source, const QVector<network::EventData> &batch) const;
+    void onDataReceivedBatch(client::DataSource source, const QSharedPointer<QVector<network::EventData>> &batch) const;
 
   private slots:
     void onDeviceDiscovered(int64_t deviceId);

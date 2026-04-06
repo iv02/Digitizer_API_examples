@@ -18,7 +18,7 @@ class NetworkMediator : public QObject
   signals:
     void deviceNetworkEvent(int64_t id, NETWORK_DEVICE_EVENT event, QVariantList parameters) const;
     void dataReceivedEvent(client::DataSource source, QSharedPointer<EventPacket> info, QSharedPointer<EventPacket> waveform) const;
-    void dataReceivedBatch(client::DataSource source, const QVector<EventData> &batch) const;
+    void dataReceivedBatch(client::DataSource source, const QSharedPointer<QVector<EventData>> &batch) const;
 
   public slots:
     void initialize();

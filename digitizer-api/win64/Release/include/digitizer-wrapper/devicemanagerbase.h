@@ -5,6 +5,8 @@
 #include <QObject>
 #include <QFuture>
 #include <QPromise>
+#include <QString>
+#include <optional>
 
 #include <api.pb.h>
 
@@ -21,6 +23,31 @@ namespace device
 {
 
 class FirmwareSettingsModelRepositoryBase;
+
+enum class ConfigurationApplyStatus
+{
+    FileOpenError = 0,
+    FileFormatInvalid,
+    SchemaNotInitialized,
+    SettingsSchemaMismatch,
+    DeviceNotReady,
+    Applied
+};
+
+struct ConfigurationApplyResult
+{
+    ConfigurationApplyStatus status{ConfigurationApplyStatus::DeviceNotReady};
+    QString message{};
+};
+
+struct ConfigurationLoadResult
+{
+    ConfigurationApplyStatus status{ConfigurationApplyStatus::FileFormatInvalid};
+    QString deviceName{};
+    QString schema{};
+    QString settings{};
+    QString message{};
+};
 
 class DeviceManagerBase: public QObject
 {
@@ -97,6 +124,9 @@ class DeviceManagerBase: public QObject
     // [FIRMWARE SETTINGS]
     [[nodiscard]] bool isFirmwareSettingsReady(int64_t) const;
     [[nodiscard]] std::pair<QString, QString> firmwareSettings(const int64_t &id) const;
+    [[nodiscard]] ConfigurationLoadResult readConfigurationFile(const QString &path) const;
+    [[nodiscard]] bool writeConfigurationFile(const QString &path, const QString &deviceName, const QString &schema, const QString &settings) const;
+    [[nodiscard]] ConfigurationApplyResult applyConfigurationFile(int64_t id, const QString &path);
 
     // [DEVICE MANAGEMENT]
     [[nodiscard]] std::vector<int64_t> knownDeviceIds() const;

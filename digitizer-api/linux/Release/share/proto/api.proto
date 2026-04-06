@@ -74,6 +74,13 @@ message DisconnectReply
 };
 
 //[FIRMWARE UPDATE]
+
+enum RootFSUpdateType
+{
+    ROOT_FS_UPDATE = 0;
+    SD_LAYOUT = 1;
+}
+
 message FirmwareUpdateRequest
 {
     uint32 timestamp = 1;
@@ -106,9 +113,18 @@ message DeviceRootFSUpdateRequest
     uint32 timestamp = 1;
     string softwareId = 2;
 
-    bytes rootfs_payload = 3;
-    string rootfs_md5 = 4;
-    string description = 5;
+    RootFSUpdateType type = 3;
+
+    optional bytes rootfs_tar_gz = 4;
+    optional string rootfs_md5 = 5;
+
+    optional bytes boot_tar_gz = 6;
+    optional string boot_md5 = 7;
+
+    optional bytes formatting_script = 8;
+    optional string formatting_script_md5 = 9;
+
+    optional string description = 10;
 };
 
 message DeviceRootFSUpdateReply

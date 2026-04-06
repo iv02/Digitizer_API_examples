@@ -1,12 +1,13 @@
 #pragma once
 #include "networkenums.h"
-#include "packets/eventpackettype.h"
-#include "packetwrappers/eventdata.h"
+#include "frameparse/packets/eventpackettype.h"
+#include "frameparse/packetwrappers/eventdata.h"
 #include "threaded.h"
 
-#include "buffers/packetbuffer.h"
+#include "measurement_data_pipeline.h"
 
 #include <QObject>
+#include <QSharedPointer>
 #include <QUuid>
 #include <chrono>
 #include <deque>
@@ -43,7 +44,7 @@ class NetworkWorker final : public QObject
   signals:
     void deviceNetworkEvent(int64_t id, NETWORK_DEVICE_EVENT event, QVariantList parameters) const;
     void dataReceivedEvent(client::DataSource source, QSharedPointer<EventPacket> info, QSharedPointer<EventPacket> waveform) const;
-    void dataReceivedBatch(client::DataSource source, const QVector<EventData> &batch) const;
+    void dataReceivedBatch(client::DataSource source, const QSharedPointer<QVector<EventData>> &batch) const;
     void buildDevice(const uint32_t &deviceId, const DiscoverBroadcastMessage &message, const quint16 &port);
 
   public:
@@ -55,31 +56,21 @@ class NetworkWorker final : public QObject
   private slots:
     void onConnectionLost(int64_t id) noexcept;
     void onDiscoverLostTimeout() noexcept;
-    void onDataReceivedEvent(const std::vector<std::any> &packets) const;
+    void onEventPairsReady(const std::vector<network::EventData> &pairs) const;
+    void onCommandDeviceNetworkEvent(int64_t id, NETWORK_DEVICE_EVENT event, const QVariantList &parameters);
 
   private:
     void addToBuffer(const QSharedPointer<EventPacket> &info, const QSharedPointer<EventPacket> &waveform) const;
-    void expireOldPending() const;
-    void expirePendingToBuffer() const;
     std::optional<quint16> deviceDataPort(int64_t deviceId) const;
     void setupSockets();
     void setupConnections();
     void processPendingDiscoverData();
     void processPendingConnection();
-    void flushBuffer(bool flushAll = false) const;
+    void flushBuffer() const;
     void cancelMeasurementWithTimeTimer(int64_t id);
     void onMeasurementStopped(int64_t id);
     void onMeasurementStarted(int64_t id);
     void startMeasurementWithTimeTimer(int64_t id, uint durationMs);
-
-    struct PendingEntry
-    {
-        QSharedPointer<EventPacket> packet;
-        quint32 deviceId{};
-        quint16 channelId{};
-        quint64 rtc{};
-        std::chrono::steady_clock::time_point addedAt{};
-    };
 
   private:
     QUdpSocket *m_discover{nullptr};
@@ -88,20 +79,15 @@ class NetworkWorker final : public QObject
     QUuid m_softwareId{};
     std::map<int64_t, client::Threaded<MaintainingDeviceConnector>> m_maintainConnectors{};
     std::map<int64_t, client::Threaded<CommandDeviceConnector>> m_commandConnectors{};
-    std::map<int64_t, QSharedPointer<PacketBuffer>> m_buffers{};
+    std::map<int64_t, QSharedPointer<MeasurementDataPipeline>> m_pipelines{};
     std::map<quint16, int64_t> m_ports{};
     std::map<int64_t, QTimer *> m_measurementWithTimeTimers{};
 
     std::map<int64_t, std::chrono::time_point<std::chrono::steady_clock>> m_discoverTimes{};
     QTimer *m_discoverLostTimer;
 
-    std::map<int64_t, QSharedPointer<EventPacket>> m_packetStorage{};
-
     mutable std::deque<EventData> m_dataBuffer{};
-    mutable std::deque<PendingEntry> m_pendingInfo{};
-    mutable std::deque<PendingEntry> m_pendingWave{};
     QTimer *m_flushTimer{nullptr};
-    QTimer *m_pendingExpiryTimer{nullptr};
     bool m_useBatchMode{false};
 };
 } // namespace network

@@ -4,8 +4,6 @@
 
 #include <QStateMachine>
 
-class QTimer;
-
 namespace device
 {
 
@@ -66,8 +64,6 @@ class DeviceStateMachine : public QStateMachine
 
     QFlags<DeviceStateFlag> stateFlags() const;
 
-    static bool isLastAttemtRestartMeasuring(const QVariantList &parameters);
-
   public slots:
     void onDeviceNetworkEvent(network::NETWORK_DEVICE_EVENT event, QVariantList parameters);
     void onDeviceCommandReceived(network::NETWORK_DEVICE_COMMAND command, QVariantList parameters) const;
@@ -82,12 +78,12 @@ class DeviceStateMachine : public QStateMachine
 
   private:
     bool m_hasShemaAndValues{false};
+    mutable network::NETWORK_DEVICE_COMMAND m_pendingUploadCommand{network::NETWORK_DEVICE_COMMAND::UPDATE_DEVICE_FIRMWARE};
+    mutable QVariantList m_pendingUploadParameters{};
 
     std::map<State, QState *> m_states{};
     QFlags<DeviceStateFlag> m_stateFlags{};
 
-    QTimer* m_reconnectTimer{};
-    int m_reconnectAttempts{};
 };
 
 } // namespace device

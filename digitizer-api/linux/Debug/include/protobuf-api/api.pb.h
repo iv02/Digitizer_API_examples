@@ -249,6 +249,39 @@ inline bool DisconnectReplyStatus_Parse(absl::string_view name, DisconnectReplyS
   return ::google::protobuf::internal::ParseNamedEnum<DisconnectReplyStatus>(
       DisconnectReplyStatus_descriptor(), name, value);
 }
+enum RootFSUpdateType : int {
+  ROOT_FS_UPDATE = 0,
+  SD_LAYOUT = 1,
+  RootFSUpdateType_INT_MIN_SENTINEL_DO_NOT_USE_ =
+      std::numeric_limits<::int32_t>::min(),
+  RootFSUpdateType_INT_MAX_SENTINEL_DO_NOT_USE_ =
+      std::numeric_limits<::int32_t>::max(),
+};
+
+bool RootFSUpdateType_IsValid(int value);
+extern const uint32_t RootFSUpdateType_internal_data_[];
+constexpr RootFSUpdateType RootFSUpdateType_MIN = static_cast<RootFSUpdateType>(0);
+constexpr RootFSUpdateType RootFSUpdateType_MAX = static_cast<RootFSUpdateType>(1);
+constexpr int RootFSUpdateType_ARRAYSIZE = 1 + 1;
+const ::google::protobuf::EnumDescriptor*
+RootFSUpdateType_descriptor();
+template <typename T>
+const std::string& RootFSUpdateType_Name(T value) {
+  static_assert(std::is_same<T, RootFSUpdateType>::value ||
+                    std::is_integral<T>::value,
+                "Incorrect type passed to RootFSUpdateType_Name().");
+  return RootFSUpdateType_Name(static_cast<RootFSUpdateType>(value));
+}
+template <>
+inline const std::string& RootFSUpdateType_Name(RootFSUpdateType value) {
+  return ::google::protobuf::internal::NameOfDenseEnum<RootFSUpdateType_descriptor,
+                                                 0, 1>(
+      static_cast<int>(value));
+}
+inline bool RootFSUpdateType_Parse(absl::string_view name, RootFSUpdateType* value) {
+  return ::google::protobuf::internal::ParseNamedEnum<RootFSUpdateType>(
+      RootFSUpdateType_descriptor(), name, value);
+}
 
 // ===================================================================
 
@@ -5311,10 +5344,15 @@ class DeviceRootFSUpdateRequest final : public ::google::protobuf::Message
   // accessors -------------------------------------------------------
   enum : int {
     kSoftwareIdFieldNumber = 2,
-    kRootfsPayloadFieldNumber = 3,
-    kRootfsMd5FieldNumber = 4,
-    kDescriptionFieldNumber = 5,
+    kRootfsTarGzFieldNumber = 4,
+    kRootfsMd5FieldNumber = 5,
+    kBootTarGzFieldNumber = 6,
+    kBootMd5FieldNumber = 7,
+    kFormattingScriptFieldNumber = 8,
+    kFormattingScriptMd5FieldNumber = 9,
+    kDescriptionFieldNumber = 10,
     kTimestampFieldNumber = 1,
+    kTypeFieldNumber = 3,
   };
   // string softwareId = 2;
   void clear_softwareid() ;
@@ -5332,23 +5370,25 @@ class DeviceRootFSUpdateRequest final : public ::google::protobuf::Message
   std::string* _internal_mutable_softwareid();
 
   public:
-  // bytes rootfs_payload = 3;
-  void clear_rootfs_payload() ;
-  const std::string& rootfs_payload() const;
+  // optional bytes rootfs_tar_gz = 4;
+  bool has_rootfs_tar_gz() const;
+  void clear_rootfs_tar_gz() ;
+  const std::string& rootfs_tar_gz() const;
   template <typename Arg_ = const std::string&, typename... Args_>
-  void set_rootfs_payload(Arg_&& arg, Args_... args);
-  std::string* mutable_rootfs_payload();
-  PROTOBUF_NODISCARD std::string* release_rootfs_payload();
-  void set_allocated_rootfs_payload(std::string* value);
+  void set_rootfs_tar_gz(Arg_&& arg, Args_... args);
+  std::string* mutable_rootfs_tar_gz();
+  PROTOBUF_NODISCARD std::string* release_rootfs_tar_gz();
+  void set_allocated_rootfs_tar_gz(std::string* value);
 
   private:
-  const std::string& _internal_rootfs_payload() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_rootfs_payload(
+  const std::string& _internal_rootfs_tar_gz() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_rootfs_tar_gz(
       const std::string& value);
-  std::string* _internal_mutable_rootfs_payload();
+  std::string* _internal_mutable_rootfs_tar_gz();
 
   public:
-  // string rootfs_md5 = 4;
+  // optional string rootfs_md5 = 5;
+  bool has_rootfs_md5() const;
   void clear_rootfs_md5() ;
   const std::string& rootfs_md5() const;
   template <typename Arg_ = const std::string&, typename... Args_>
@@ -5364,7 +5404,76 @@ class DeviceRootFSUpdateRequest final : public ::google::protobuf::Message
   std::string* _internal_mutable_rootfs_md5();
 
   public:
-  // string description = 5;
+  // optional bytes boot_tar_gz = 6;
+  bool has_boot_tar_gz() const;
+  void clear_boot_tar_gz() ;
+  const std::string& boot_tar_gz() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_boot_tar_gz(Arg_&& arg, Args_... args);
+  std::string* mutable_boot_tar_gz();
+  PROTOBUF_NODISCARD std::string* release_boot_tar_gz();
+  void set_allocated_boot_tar_gz(std::string* value);
+
+  private:
+  const std::string& _internal_boot_tar_gz() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_boot_tar_gz(
+      const std::string& value);
+  std::string* _internal_mutable_boot_tar_gz();
+
+  public:
+  // optional string boot_md5 = 7;
+  bool has_boot_md5() const;
+  void clear_boot_md5() ;
+  const std::string& boot_md5() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_boot_md5(Arg_&& arg, Args_... args);
+  std::string* mutable_boot_md5();
+  PROTOBUF_NODISCARD std::string* release_boot_md5();
+  void set_allocated_boot_md5(std::string* value);
+
+  private:
+  const std::string& _internal_boot_md5() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_boot_md5(
+      const std::string& value);
+  std::string* _internal_mutable_boot_md5();
+
+  public:
+  // optional bytes formatting_script = 8;
+  bool has_formatting_script() const;
+  void clear_formatting_script() ;
+  const std::string& formatting_script() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_formatting_script(Arg_&& arg, Args_... args);
+  std::string* mutable_formatting_script();
+  PROTOBUF_NODISCARD std::string* release_formatting_script();
+  void set_allocated_formatting_script(std::string* value);
+
+  private:
+  const std::string& _internal_formatting_script() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_formatting_script(
+      const std::string& value);
+  std::string* _internal_mutable_formatting_script();
+
+  public:
+  // optional string formatting_script_md5 = 9;
+  bool has_formatting_script_md5() const;
+  void clear_formatting_script_md5() ;
+  const std::string& formatting_script_md5() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_formatting_script_md5(Arg_&& arg, Args_... args);
+  std::string* mutable_formatting_script_md5();
+  PROTOBUF_NODISCARD std::string* release_formatting_script_md5();
+  void set_allocated_formatting_script_md5(std::string* value);
+
+  private:
+  const std::string& _internal_formatting_script_md5() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_formatting_script_md5(
+      const std::string& value);
+  std::string* _internal_mutable_formatting_script_md5();
+
+  public:
+  // optional string description = 10;
+  bool has_description() const;
   void clear_description() ;
   const std::string& description() const;
   template <typename Arg_ = const std::string&, typename... Args_>
@@ -5390,13 +5499,23 @@ class DeviceRootFSUpdateRequest final : public ::google::protobuf::Message
   void _internal_set_timestamp(::uint32_t value);
 
   public:
+  // .RootFSUpdateType type = 3;
+  void clear_type() ;
+  ::RootFSUpdateType type() const;
+  void set_type(::RootFSUpdateType value);
+
+  private:
+  ::RootFSUpdateType _internal_type() const;
+  void _internal_set_type(::RootFSUpdateType value);
+
+  public:
   // @@protoc_insertion_point(class_scope:DeviceRootFSUpdateRequest)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      3, 5, 0,
-      65, 2>
+      4, 10, 0,
+      102, 2>
       _table_;
 
   static constexpr const void* _raw_default_instance_ =
@@ -5416,12 +5535,18 @@ class DeviceRootFSUpdateRequest final : public ::google::protobuf::Message
     inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
                           ::google::protobuf::Arena* arena, const Impl_& from,
                           const DeviceRootFSUpdateRequest& from_msg);
+    ::google::protobuf::internal::HasBits<1> _has_bits_;
+    mutable ::google::protobuf::internal::CachedSize _cached_size_;
     ::google::protobuf::internal::ArenaStringPtr softwareid_;
-    ::google::protobuf::internal::ArenaStringPtr rootfs_payload_;
+    ::google::protobuf::internal::ArenaStringPtr rootfs_tar_gz_;
     ::google::protobuf::internal::ArenaStringPtr rootfs_md5_;
+    ::google::protobuf::internal::ArenaStringPtr boot_tar_gz_;
+    ::google::protobuf::internal::ArenaStringPtr boot_md5_;
+    ::google::protobuf::internal::ArenaStringPtr formatting_script_;
+    ::google::protobuf::internal::ArenaStringPtr formatting_script_md5_;
     ::google::protobuf::internal::ArenaStringPtr description_;
     ::uint32_t timestamp_;
-    mutable ::google::protobuf::internal::CachedSize _cached_size_;
+    int type_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
@@ -8162,60 +8287,108 @@ inline void DeviceRootFSUpdateRequest::set_allocated_softwareid(std::string* val
   // @@protoc_insertion_point(field_set_allocated:DeviceRootFSUpdateRequest.softwareId)
 }
 
-// bytes rootfs_payload = 3;
-inline void DeviceRootFSUpdateRequest::clear_rootfs_payload() {
+// .RootFSUpdateType type = 3;
+inline void DeviceRootFSUpdateRequest::clear_type() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.rootfs_payload_.ClearToEmpty();
+  _impl_.type_ = 0;
 }
-inline const std::string& DeviceRootFSUpdateRequest::rootfs_payload() const
-    ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:DeviceRootFSUpdateRequest.rootfs_payload)
-  return _internal_rootfs_payload();
+inline ::RootFSUpdateType DeviceRootFSUpdateRequest::type() const {
+  // @@protoc_insertion_point(field_get:DeviceRootFSUpdateRequest.type)
+  return _internal_type();
 }
-template <typename Arg_, typename... Args_>
-inline PROTOBUF_ALWAYS_INLINE void DeviceRootFSUpdateRequest::set_rootfs_payload(Arg_&& arg,
-                                                     Args_... args) {
-  ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.rootfs_payload_.SetBytes(static_cast<Arg_&&>(arg), args..., GetArena());
-  // @@protoc_insertion_point(field_set:DeviceRootFSUpdateRequest.rootfs_payload)
+inline void DeviceRootFSUpdateRequest::set_type(::RootFSUpdateType value) {
+  _internal_set_type(value);
+  // @@protoc_insertion_point(field_set:DeviceRootFSUpdateRequest.type)
 }
-inline std::string* DeviceRootFSUpdateRequest::mutable_rootfs_payload() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  std::string* _s = _internal_mutable_rootfs_payload();
-  // @@protoc_insertion_point(field_mutable:DeviceRootFSUpdateRequest.rootfs_payload)
-  return _s;
-}
-inline const std::string& DeviceRootFSUpdateRequest::_internal_rootfs_payload() const {
+inline ::RootFSUpdateType DeviceRootFSUpdateRequest::_internal_type() const {
   ::google::protobuf::internal::TSanRead(&_impl_);
-  return _impl_.rootfs_payload_.Get();
+  return static_cast<::RootFSUpdateType>(_impl_.type_);
 }
-inline void DeviceRootFSUpdateRequest::_internal_set_rootfs_payload(const std::string& value) {
+inline void DeviceRootFSUpdateRequest::_internal_set_type(::RootFSUpdateType value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.rootfs_payload_.Set(value, GetArena());
-}
-inline std::string* DeviceRootFSUpdateRequest::_internal_mutable_rootfs_payload() {
-  ::google::protobuf::internal::TSanWrite(&_impl_);
-  return _impl_.rootfs_payload_.Mutable( GetArena());
-}
-inline std::string* DeviceRootFSUpdateRequest::release_rootfs_payload() {
-  ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:DeviceRootFSUpdateRequest.rootfs_payload)
-  return _impl_.rootfs_payload_.Release();
-}
-inline void DeviceRootFSUpdateRequest::set_allocated_rootfs_payload(std::string* value) {
-  ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.rootfs_payload_.SetAllocated(value, GetArena());
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-        if (_impl_.rootfs_payload_.IsDefault()) {
-          _impl_.rootfs_payload_.Set("", GetArena());
-        }
-  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:DeviceRootFSUpdateRequest.rootfs_payload)
+  _impl_.type_ = value;
 }
 
-// string rootfs_md5 = 4;
+// optional bytes rootfs_tar_gz = 4;
+inline bool DeviceRootFSUpdateRequest::has_rootfs_tar_gz() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
+  return value;
+}
+inline void DeviceRootFSUpdateRequest::clear_rootfs_tar_gz() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.rootfs_tar_gz_.ClearToEmpty();
+  _impl_._has_bits_[0] &= ~0x00000001u;
+}
+inline const std::string& DeviceRootFSUpdateRequest::rootfs_tar_gz() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:DeviceRootFSUpdateRequest.rootfs_tar_gz)
+  return _internal_rootfs_tar_gz();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void DeviceRootFSUpdateRequest::set_rootfs_tar_gz(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000001u;
+  _impl_.rootfs_tar_gz_.SetBytes(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:DeviceRootFSUpdateRequest.rootfs_tar_gz)
+}
+inline std::string* DeviceRootFSUpdateRequest::mutable_rootfs_tar_gz() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_rootfs_tar_gz();
+  // @@protoc_insertion_point(field_mutable:DeviceRootFSUpdateRequest.rootfs_tar_gz)
+  return _s;
+}
+inline const std::string& DeviceRootFSUpdateRequest::_internal_rootfs_tar_gz() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.rootfs_tar_gz_.Get();
+}
+inline void DeviceRootFSUpdateRequest::_internal_set_rootfs_tar_gz(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000001u;
+  _impl_.rootfs_tar_gz_.Set(value, GetArena());
+}
+inline std::string* DeviceRootFSUpdateRequest::_internal_mutable_rootfs_tar_gz() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000001u;
+  return _impl_.rootfs_tar_gz_.Mutable( GetArena());
+}
+inline std::string* DeviceRootFSUpdateRequest::release_rootfs_tar_gz() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:DeviceRootFSUpdateRequest.rootfs_tar_gz)
+  if ((_impl_._has_bits_[0] & 0x00000001u) == 0) {
+    return nullptr;
+  }
+  _impl_._has_bits_[0] &= ~0x00000001u;
+  auto* released = _impl_.rootfs_tar_gz_.Release();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.rootfs_tar_gz_.Set("", GetArena());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  return released;
+}
+inline void DeviceRootFSUpdateRequest::set_allocated_rootfs_tar_gz(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (value != nullptr) {
+    _impl_._has_bits_[0] |= 0x00000001u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000001u;
+  }
+  _impl_.rootfs_tar_gz_.SetAllocated(value, GetArena());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        if (_impl_.rootfs_tar_gz_.IsDefault()) {
+          _impl_.rootfs_tar_gz_.Set("", GetArena());
+        }
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:DeviceRootFSUpdateRequest.rootfs_tar_gz)
+}
+
+// optional string rootfs_md5 = 5;
+inline bool DeviceRootFSUpdateRequest::has_rootfs_md5() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
+  return value;
+}
 inline void DeviceRootFSUpdateRequest::clear_rootfs_md5() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.rootfs_md5_.ClearToEmpty();
+  _impl_._has_bits_[0] &= ~0x00000002u;
 }
 inline const std::string& DeviceRootFSUpdateRequest::rootfs_md5() const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
@@ -8226,6 +8399,7 @@ template <typename Arg_, typename... Args_>
 inline PROTOBUF_ALWAYS_INLINE void DeviceRootFSUpdateRequest::set_rootfs_md5(Arg_&& arg,
                                                      Args_... args) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000002u;
   _impl_.rootfs_md5_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
   // @@protoc_insertion_point(field_set:DeviceRootFSUpdateRequest.rootfs_md5)
 }
@@ -8240,19 +8414,34 @@ inline const std::string& DeviceRootFSUpdateRequest::_internal_rootfs_md5() cons
 }
 inline void DeviceRootFSUpdateRequest::_internal_set_rootfs_md5(const std::string& value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000002u;
   _impl_.rootfs_md5_.Set(value, GetArena());
 }
 inline std::string* DeviceRootFSUpdateRequest::_internal_mutable_rootfs_md5() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000002u;
   return _impl_.rootfs_md5_.Mutable( GetArena());
 }
 inline std::string* DeviceRootFSUpdateRequest::release_rootfs_md5() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   // @@protoc_insertion_point(field_release:DeviceRootFSUpdateRequest.rootfs_md5)
-  return _impl_.rootfs_md5_.Release();
+  if ((_impl_._has_bits_[0] & 0x00000002u) == 0) {
+    return nullptr;
+  }
+  _impl_._has_bits_[0] &= ~0x00000002u;
+  auto* released = _impl_.rootfs_md5_.Release();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.rootfs_md5_.Set("", GetArena());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  return released;
 }
 inline void DeviceRootFSUpdateRequest::set_allocated_rootfs_md5(std::string* value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (value != nullptr) {
+    _impl_._has_bits_[0] |= 0x00000002u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000002u;
+  }
   _impl_.rootfs_md5_.SetAllocated(value, GetArena());
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
         if (_impl_.rootfs_md5_.IsDefault()) {
@@ -8262,10 +8451,299 @@ inline void DeviceRootFSUpdateRequest::set_allocated_rootfs_md5(std::string* val
   // @@protoc_insertion_point(field_set_allocated:DeviceRootFSUpdateRequest.rootfs_md5)
 }
 
-// string description = 5;
+// optional bytes boot_tar_gz = 6;
+inline bool DeviceRootFSUpdateRequest::has_boot_tar_gz() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
+  return value;
+}
+inline void DeviceRootFSUpdateRequest::clear_boot_tar_gz() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.boot_tar_gz_.ClearToEmpty();
+  _impl_._has_bits_[0] &= ~0x00000004u;
+}
+inline const std::string& DeviceRootFSUpdateRequest::boot_tar_gz() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:DeviceRootFSUpdateRequest.boot_tar_gz)
+  return _internal_boot_tar_gz();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void DeviceRootFSUpdateRequest::set_boot_tar_gz(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000004u;
+  _impl_.boot_tar_gz_.SetBytes(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:DeviceRootFSUpdateRequest.boot_tar_gz)
+}
+inline std::string* DeviceRootFSUpdateRequest::mutable_boot_tar_gz() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_boot_tar_gz();
+  // @@protoc_insertion_point(field_mutable:DeviceRootFSUpdateRequest.boot_tar_gz)
+  return _s;
+}
+inline const std::string& DeviceRootFSUpdateRequest::_internal_boot_tar_gz() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.boot_tar_gz_.Get();
+}
+inline void DeviceRootFSUpdateRequest::_internal_set_boot_tar_gz(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000004u;
+  _impl_.boot_tar_gz_.Set(value, GetArena());
+}
+inline std::string* DeviceRootFSUpdateRequest::_internal_mutable_boot_tar_gz() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000004u;
+  return _impl_.boot_tar_gz_.Mutable( GetArena());
+}
+inline std::string* DeviceRootFSUpdateRequest::release_boot_tar_gz() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:DeviceRootFSUpdateRequest.boot_tar_gz)
+  if ((_impl_._has_bits_[0] & 0x00000004u) == 0) {
+    return nullptr;
+  }
+  _impl_._has_bits_[0] &= ~0x00000004u;
+  auto* released = _impl_.boot_tar_gz_.Release();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.boot_tar_gz_.Set("", GetArena());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  return released;
+}
+inline void DeviceRootFSUpdateRequest::set_allocated_boot_tar_gz(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (value != nullptr) {
+    _impl_._has_bits_[0] |= 0x00000004u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000004u;
+  }
+  _impl_.boot_tar_gz_.SetAllocated(value, GetArena());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        if (_impl_.boot_tar_gz_.IsDefault()) {
+          _impl_.boot_tar_gz_.Set("", GetArena());
+        }
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:DeviceRootFSUpdateRequest.boot_tar_gz)
+}
+
+// optional string boot_md5 = 7;
+inline bool DeviceRootFSUpdateRequest::has_boot_md5() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000008u) != 0;
+  return value;
+}
+inline void DeviceRootFSUpdateRequest::clear_boot_md5() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.boot_md5_.ClearToEmpty();
+  _impl_._has_bits_[0] &= ~0x00000008u;
+}
+inline const std::string& DeviceRootFSUpdateRequest::boot_md5() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:DeviceRootFSUpdateRequest.boot_md5)
+  return _internal_boot_md5();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void DeviceRootFSUpdateRequest::set_boot_md5(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000008u;
+  _impl_.boot_md5_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:DeviceRootFSUpdateRequest.boot_md5)
+}
+inline std::string* DeviceRootFSUpdateRequest::mutable_boot_md5() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_boot_md5();
+  // @@protoc_insertion_point(field_mutable:DeviceRootFSUpdateRequest.boot_md5)
+  return _s;
+}
+inline const std::string& DeviceRootFSUpdateRequest::_internal_boot_md5() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.boot_md5_.Get();
+}
+inline void DeviceRootFSUpdateRequest::_internal_set_boot_md5(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000008u;
+  _impl_.boot_md5_.Set(value, GetArena());
+}
+inline std::string* DeviceRootFSUpdateRequest::_internal_mutable_boot_md5() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000008u;
+  return _impl_.boot_md5_.Mutable( GetArena());
+}
+inline std::string* DeviceRootFSUpdateRequest::release_boot_md5() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:DeviceRootFSUpdateRequest.boot_md5)
+  if ((_impl_._has_bits_[0] & 0x00000008u) == 0) {
+    return nullptr;
+  }
+  _impl_._has_bits_[0] &= ~0x00000008u;
+  auto* released = _impl_.boot_md5_.Release();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.boot_md5_.Set("", GetArena());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  return released;
+}
+inline void DeviceRootFSUpdateRequest::set_allocated_boot_md5(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (value != nullptr) {
+    _impl_._has_bits_[0] |= 0x00000008u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000008u;
+  }
+  _impl_.boot_md5_.SetAllocated(value, GetArena());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        if (_impl_.boot_md5_.IsDefault()) {
+          _impl_.boot_md5_.Set("", GetArena());
+        }
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:DeviceRootFSUpdateRequest.boot_md5)
+}
+
+// optional bytes formatting_script = 8;
+inline bool DeviceRootFSUpdateRequest::has_formatting_script() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000010u) != 0;
+  return value;
+}
+inline void DeviceRootFSUpdateRequest::clear_formatting_script() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.formatting_script_.ClearToEmpty();
+  _impl_._has_bits_[0] &= ~0x00000010u;
+}
+inline const std::string& DeviceRootFSUpdateRequest::formatting_script() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:DeviceRootFSUpdateRequest.formatting_script)
+  return _internal_formatting_script();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void DeviceRootFSUpdateRequest::set_formatting_script(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000010u;
+  _impl_.formatting_script_.SetBytes(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:DeviceRootFSUpdateRequest.formatting_script)
+}
+inline std::string* DeviceRootFSUpdateRequest::mutable_formatting_script() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_formatting_script();
+  // @@protoc_insertion_point(field_mutable:DeviceRootFSUpdateRequest.formatting_script)
+  return _s;
+}
+inline const std::string& DeviceRootFSUpdateRequest::_internal_formatting_script() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.formatting_script_.Get();
+}
+inline void DeviceRootFSUpdateRequest::_internal_set_formatting_script(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000010u;
+  _impl_.formatting_script_.Set(value, GetArena());
+}
+inline std::string* DeviceRootFSUpdateRequest::_internal_mutable_formatting_script() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000010u;
+  return _impl_.formatting_script_.Mutable( GetArena());
+}
+inline std::string* DeviceRootFSUpdateRequest::release_formatting_script() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:DeviceRootFSUpdateRequest.formatting_script)
+  if ((_impl_._has_bits_[0] & 0x00000010u) == 0) {
+    return nullptr;
+  }
+  _impl_._has_bits_[0] &= ~0x00000010u;
+  auto* released = _impl_.formatting_script_.Release();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.formatting_script_.Set("", GetArena());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  return released;
+}
+inline void DeviceRootFSUpdateRequest::set_allocated_formatting_script(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (value != nullptr) {
+    _impl_._has_bits_[0] |= 0x00000010u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000010u;
+  }
+  _impl_.formatting_script_.SetAllocated(value, GetArena());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        if (_impl_.formatting_script_.IsDefault()) {
+          _impl_.formatting_script_.Set("", GetArena());
+        }
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:DeviceRootFSUpdateRequest.formatting_script)
+}
+
+// optional string formatting_script_md5 = 9;
+inline bool DeviceRootFSUpdateRequest::has_formatting_script_md5() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000020u) != 0;
+  return value;
+}
+inline void DeviceRootFSUpdateRequest::clear_formatting_script_md5() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.formatting_script_md5_.ClearToEmpty();
+  _impl_._has_bits_[0] &= ~0x00000020u;
+}
+inline const std::string& DeviceRootFSUpdateRequest::formatting_script_md5() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:DeviceRootFSUpdateRequest.formatting_script_md5)
+  return _internal_formatting_script_md5();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void DeviceRootFSUpdateRequest::set_formatting_script_md5(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000020u;
+  _impl_.formatting_script_md5_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:DeviceRootFSUpdateRequest.formatting_script_md5)
+}
+inline std::string* DeviceRootFSUpdateRequest::mutable_formatting_script_md5() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_formatting_script_md5();
+  // @@protoc_insertion_point(field_mutable:DeviceRootFSUpdateRequest.formatting_script_md5)
+  return _s;
+}
+inline const std::string& DeviceRootFSUpdateRequest::_internal_formatting_script_md5() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.formatting_script_md5_.Get();
+}
+inline void DeviceRootFSUpdateRequest::_internal_set_formatting_script_md5(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000020u;
+  _impl_.formatting_script_md5_.Set(value, GetArena());
+}
+inline std::string* DeviceRootFSUpdateRequest::_internal_mutable_formatting_script_md5() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000020u;
+  return _impl_.formatting_script_md5_.Mutable( GetArena());
+}
+inline std::string* DeviceRootFSUpdateRequest::release_formatting_script_md5() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:DeviceRootFSUpdateRequest.formatting_script_md5)
+  if ((_impl_._has_bits_[0] & 0x00000020u) == 0) {
+    return nullptr;
+  }
+  _impl_._has_bits_[0] &= ~0x00000020u;
+  auto* released = _impl_.formatting_script_md5_.Release();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.formatting_script_md5_.Set("", GetArena());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  return released;
+}
+inline void DeviceRootFSUpdateRequest::set_allocated_formatting_script_md5(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (value != nullptr) {
+    _impl_._has_bits_[0] |= 0x00000020u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000020u;
+  }
+  _impl_.formatting_script_md5_.SetAllocated(value, GetArena());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        if (_impl_.formatting_script_md5_.IsDefault()) {
+          _impl_.formatting_script_md5_.Set("", GetArena());
+        }
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:DeviceRootFSUpdateRequest.formatting_script_md5)
+}
+
+// optional string description = 10;
+inline bool DeviceRootFSUpdateRequest::has_description() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000040u) != 0;
+  return value;
+}
 inline void DeviceRootFSUpdateRequest::clear_description() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.description_.ClearToEmpty();
+  _impl_._has_bits_[0] &= ~0x00000040u;
 }
 inline const std::string& DeviceRootFSUpdateRequest::description() const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
@@ -8276,6 +8754,7 @@ template <typename Arg_, typename... Args_>
 inline PROTOBUF_ALWAYS_INLINE void DeviceRootFSUpdateRequest::set_description(Arg_&& arg,
                                                      Args_... args) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000040u;
   _impl_.description_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
   // @@protoc_insertion_point(field_set:DeviceRootFSUpdateRequest.description)
 }
@@ -8290,19 +8769,34 @@ inline const std::string& DeviceRootFSUpdateRequest::_internal_description() con
 }
 inline void DeviceRootFSUpdateRequest::_internal_set_description(const std::string& value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000040u;
   _impl_.description_.Set(value, GetArena());
 }
 inline std::string* DeviceRootFSUpdateRequest::_internal_mutable_description() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000040u;
   return _impl_.description_.Mutable( GetArena());
 }
 inline std::string* DeviceRootFSUpdateRequest::release_description() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   // @@protoc_insertion_point(field_release:DeviceRootFSUpdateRequest.description)
-  return _impl_.description_.Release();
+  if ((_impl_._has_bits_[0] & 0x00000040u) == 0) {
+    return nullptr;
+  }
+  _impl_._has_bits_[0] &= ~0x00000040u;
+  auto* released = _impl_.description_.Release();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.description_.Set("", GetArena());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  return released;
 }
 inline void DeviceRootFSUpdateRequest::set_allocated_description(std::string* value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (value != nullptr) {
+    _impl_._has_bits_[0] |= 0x00000040u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000040u;
+  }
   _impl_.description_.SetAllocated(value, GetArena());
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
         if (_impl_.description_.IsDefault()) {
@@ -10125,6 +10619,12 @@ struct is_proto_enum<::DisconnectReplyStatus> : std::true_type {};
 template <>
 inline const EnumDescriptor* GetEnumDescriptor<::DisconnectReplyStatus>() {
   return ::DisconnectReplyStatus_descriptor();
+}
+template <>
+struct is_proto_enum<::RootFSUpdateType> : std::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor<::RootFSUpdateType>() {
+  return ::RootFSUpdateType_descriptor();
 }
 
 }  // namespace protobuf
