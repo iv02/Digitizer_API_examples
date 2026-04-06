@@ -1,10 +1,10 @@
-﻿#include "mainwindow.h"
+#include "mainwindow.h"
 #include "devicecontrolpanel.h"
 #include "settingspanel.h"
 #include "waveformspectrumwidget.h"
 #include "datatablewidget.h"
 #include "digitizerinteractor.h"
-#include "packetwrappers/eventdata.h"
+#include "frameparse/packetwrappers/eventdata.h"
 
 #include <QGridLayout>
 #include <QMetaObject>

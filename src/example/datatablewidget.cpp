@@ -1,7 +1,7 @@
 #include "datatablewidget.h"
 #include "digitizerinteractor.h"
-#include "packetwrappers/eventdata.h"
-#include "packetwrappers/eventpacket.h"
+#include "frameparse/packetwrappers/eventdata.h"
+#include "frameparse/packetwrappers/eventpacket.h"
 
 #include <QHeaderView>
 #include <QStandardItemModel>

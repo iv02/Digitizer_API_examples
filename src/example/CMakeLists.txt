@@ -22,9 +22,13 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE QT_MESSAGELOGCONTEXT)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(WIN32)
-    target_include_directories(${PROJECT_NAME} PRIVATE 
-        "${CMAKE_SOURCE_DIR}/digitizer-api/win64/${CMAKE_BUILD_TYPE}/include/event-packet"
-    )
+target_include_directories(${PROJECT_NAME} PRIVATE
+  "${CMAKE_SOURCE_DIR}/digitizer-api/win64/${CMAKE_BUILD_TYPE}/include/event-packet/frameparse"
+)
+elseif(LINUX)
+target_include_directories(${PROJECT_NAME} PRIVATE
+  "${CMAKE_SOURCE_DIR}/digitizer-api/linux/${CMAKE_BUILD_TYPE}/include/event-packet/frameparse"
+)
 endif()
 
 target_link_libraries(${PROJECT_NAME}

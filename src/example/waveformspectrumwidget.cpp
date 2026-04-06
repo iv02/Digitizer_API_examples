@@ -1,7 +1,7 @@
 #include "waveformspectrumwidget.h"
 #include "dataworker.h"
 #include "digitizerinteractor.h"
-#include "packetwrappers/eventdata.h"
+#include "frameparse/packetwrappers/eventdata.h"
 
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>

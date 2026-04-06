@@ -1,7 +1,7 @@
-﻿#pragma once
+#pragma once
 
 #include <QMainWindow>
-#include "packetwrappers/eventdata.h"
+#include "frameparse/packetwrappers/eventdata.h"
 
 class QTimer;
 

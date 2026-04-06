@@ -1,6 +1,6 @@
 #include "dataworker.h"
-#include "packetwrappers/eventdata.h"
-#include "packetwrappers/eventpacket.h"
+#include "frameparse/packetwrappers/eventdata.h"
+#include "frameparse/packetwrappers/eventpacket.h"
 
 DataWorker::DataWorker(QObject *parent) : QObject(parent)
 {
