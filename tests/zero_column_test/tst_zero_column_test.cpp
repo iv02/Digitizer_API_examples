@@ -6,14 +6,13 @@
 #include <QElapsedTimer>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QThread>
 #include <QTemporaryDir>
+#include <QThread>
 #include <QVector>
 
 #include <algorithm>
 #include <cmath>
 #include <optional>
-#include <cstddef>
 #include <vector>
 
 using namespace digi;
@@ -54,15 +53,6 @@ bool waitForSettingsCacheReady(DigitizerInteractor &interactor, int64_t deviceId
     const auto metaValues = interactor.firmwareSettings(deviceId);
     return !metaValues.first.isEmpty() && !metaValues.second.isEmpty();
 }
-
-struct SettingSlot
-{
-    QString fwTypeName;
-    QString name;
-    int column;
-    QVariant baseline;
-    QVariant perturbed;
-};
 
 static bool variantSameNumber(const QVariant &a, const QVariant &b)
 {
@@ -108,28 +98,26 @@ static bool variantSettingEqual(const QVariant &device, const QVariant &expected
     return false;
 }
 
+static bool variantSettingDifferent(const QVariant &a, const QVariant &b)
+{
+    return !variantSettingEqual(a, b);
+}
+
 static void pushCandidate(std::vector<QVariant> &out, const QVariant &baseline, const QVariant &q)
 {
     if (!q.isValid())
         return;
-    if (variantSameNumber(q, baseline))
+    if (variantSettingEqual(q, baseline))
         return;
     for (const QVariant &e : out)
     {
-        if ((e.typeId() == QMetaType::Double || e.typeId() == QMetaType::Float)
-            && (q.typeId() == QMetaType::Double || q.typeId() == QMetaType::Float))
-        {
-            if (qFuzzyCompare(e.toDouble(), q.toDouble()))
-                return;
-        }
-        else if (e == q)
+        if (variantSettingEqual(e, q))
             return;
     }
     out.push_back(q);
 }
 
-static QVariant lookupSchemaStep(const QJsonDocument &doc, const QString &fwTypeName,
-                                 const QString &settingKey)
+static QVariant lookupSchemaStep(const QJsonDocument &doc, const QString &fwTypeName, const QString &settingKey)
 {
     if (!doc.isObject())
         return {};
@@ -140,8 +128,7 @@ static QVariant lookupSchemaStep(const QJsonDocument &doc, const QString &fwType
 
     if (fwTypeName == QStringLiteral("Device"))
     {
-        const QJsonObject prop
-            = tab.value(QStringLiteral("properties")).toObject().value(settingKey).toObject();
+        const QJsonObject prop = tab.value(QStringLiteral("properties")).toObject().value(settingKey).toObject();
         if (prop.contains(QStringLiteral("step")))
             return prop.value(QStringLiteral("step")).toVariant();
         return {};
@@ -158,15 +145,14 @@ static QVariant lookupSchemaStep(const QJsonDocument &doc, const QString &fwType
     return {};
 }
 
-static void addStepDisplacementCandidates(std::vector<QVariant> &c, const QVariant &baseline,
-                                        const QVariant &schemaStep)
+static void addStepDisplacementCandidates(std::vector<QVariant> &c, const QVariant &baseline, const QVariant &schemaStep)
 {
     if (!schemaStep.isValid() || schemaStep.isNull())
         return;
 
     const int bt = baseline.typeId();
-    const bool isIntLike = (bt == QMetaType::Int || bt == QMetaType::LongLong || bt == QMetaType::UInt
-                            || bt == QMetaType::ULongLong);
+    const bool isIntLike
+        = (bt == QMetaType::Int || bt == QMetaType::LongLong || bt == QMetaType::UInt || bt == QMetaType::ULongLong);
 
     if (isIntLike || (baseline.canConvert<qlonglong>() && baseline.metaType().id() != QMetaType::QString
                       && baseline.metaType().id() != QMetaType::Double && baseline.metaType().id() != QMetaType::Float))
@@ -189,8 +175,7 @@ static void addStepDisplacementCandidates(std::vector<QVariant> &c, const QVaria
     }
 
     const bool isFloatLike = (bt == QMetaType::Double || bt == QMetaType::Float);
-    if (isFloatLike
-        || (baseline.canConvert<double>() && baseline.metaType().id() != QMetaType::QString))
+    if (isFloatLike || (baseline.canConvert<double>() && baseline.metaType().id() != QMetaType::QString))
     {
         bool ok = false;
         const double sd = schemaStep.toDouble(&ok);
@@ -208,7 +193,7 @@ static void addStepDisplacementCandidates(std::vector<QVariant> &c, const QVaria
     }
 }
 
-std::vector<QVariant> perturbationCandidates(const QVariant &v, const QVariant &schemaStep)
+static std::vector<QVariant> perturbationCandidates(const QVariant &v, const QVariant &schemaStep)
 {
     std::vector<QVariant> c;
 
@@ -223,9 +208,7 @@ std::vector<QVariant> perturbationCandidates(const QVariant &v, const QVariant &
     case QMetaType::Float: {
         addStepDisplacementCandidates(c, v, schemaStep);
         const double x = v.toDouble();
-        constexpr double steps[] = {
-            1e-4, -1e-4, 1e-3, -1e-3, 1e-2, -1e-2, 0.05, -0.05, 0.1, -0.1,
-        };
+        constexpr double steps[] = {1e-4, -1e-4, 1e-3, -1e-3, 1e-2, -1e-2, 0.05, -0.05, 0.1, -0.1};
         for (double d : steps)
         {
             const double y = x + d;
@@ -235,12 +218,10 @@ std::vector<QVariant> perturbationCandidates(const QVariant &v, const QVariant &
         }
         if (std::abs(x) >= 8.0)
         {
-            const double yp = x + 1.0;
-            const double ym = x - 1.0;
-            if (std::isfinite(yp))
-                pushCandidate(c, v, QVariant(yp));
-            if (std::isfinite(ym))
-                pushCandidate(c, v, QVariant(ym));
+            if (std::isfinite(x + 1.0))
+                pushCandidate(c, v, QVariant(x + 1.0));
+            if (std::isfinite(x - 1.0))
+                pushCandidate(c, v, QVariant(x - 1.0));
         }
         return c;
     }
@@ -263,9 +244,7 @@ std::vector<QVariant> perturbationCandidates(const QVariant &v, const QVariant &
     {
         addStepDisplacementCandidates(c, v, schemaStep);
         const double x = v.toDouble();
-        constexpr double steps[] = {
-            1e-4, -1e-4, 1e-3, -1e-3, 1e-2, -1e-2, 0.05, -0.05, 0.1, -0.1,
-        };
+        constexpr double steps[] = {1e-4, -1e-4, 1e-3, -1e-3, 1e-2, -1e-2, 0.05, -0.05, 0.1, -0.1};
         for (double d : steps)
         {
             const double y = x + d;
@@ -295,204 +274,191 @@ std::vector<QVariant> perturbationCandidates(const QVariant &v, const QVariant &
     return c;
 }
 
-int columnLimit(DigitizerInteractor &interactor, int64_t deviceId, const QString &fwTypeName)
+struct PropagationCase
 {
-    const uint16_t ch = interactor.getDeviceChannels(deviceId);
-    if (fwTypeName == QStringLiteral("Device"))
-        return 2;
-    return std::max(16, static_cast<int>(ch) + 2);
-}
+    QString fwTypeName;
+    QString name;
+    QVariant baseline0;
+    std::vector<QVariant> baselinePerChannel;
+    QVariant new0;
+};
 
-std::vector<SettingSlot> collectPerturbableSlots(DigitizerInteractor &interactor, int64_t deviceId)
+static bool tryFindPropagationCase(DigitizerInteractor &interactor,
+                                  int64_t deviceId,
+                                  const QJsonDocument &schemaDoc,
+                                  int channelCount,
+                                  const QString &dconfPath,
+                                  PropagationCase &out)
 {
-    std::vector<SettingSlot> out;
-    QJsonParseError parseError;
-    const QJsonDocument schemaDoc
-        = QJsonDocument::fromJson(interactor.firmwareSettings(deviceId).first.toUtf8(), &parseError);
-    (void)parseError;
-
     const QStringList fwNames = interactor.fwTypeNameList(deviceId);
     for (const QString &fw : fwNames)
     {
+        if (fw == QStringLiteral("Device"))
+            continue;
+
         const QStringList names = interactor.fwSettingList(deviceId, fw);
-        const int maxCol = columnLimit(interactor, deviceId, fw);
         for (const QString &settingName : names)
         {
-            const QVariant schemaStep = lookupSchemaStep(schemaDoc, fw, settingName);
-            for (int col = 1; col < maxCol; ++col)
+            const QVariant baseline0 = interactor.getSetting(deviceId, fw, settingName, 0);
+            if (!baseline0.isValid())
+                continue;
+
+            std::vector<QVariant> baselinePerChannel;
+            baselinePerChannel.reserve(channelCount);
+            bool okAll = true;
+            for (int ch = 1; ch <= channelCount; ++ch)
             {
-                const QVariant cur = interactor.getSetting(deviceId, fw, settingName, col);
-                if (!cur.isValid())
-                    continue;
-                const std::vector<QVariant> candidates = perturbationCandidates(cur, schemaStep);
-                std::optional<QVariant> chosen;
-                for (const QVariant &next : candidates)
+                const QVariant v = interactor.getSetting(deviceId, fw, settingName, ch);
+                if (!v.isValid())
                 {
-                    if (!interactor.setSetting(deviceId, fw, settingName, col, next))
-                        continue;
-                    if (!interactor.uploadSettings(deviceId))
-                    {
-                        (void)interactor.setSetting(deviceId, fw, settingName, col, cur);
-                        (void)interactor.downloadSettings(deviceId);
-                        continue;
-                    }
-                    if (!interactor.downloadSettings(deviceId))
-                    {
-                        (void)interactor.setSetting(deviceId, fw, settingName, col, cur);
-                        (void)interactor.uploadSettings(deviceId);
-                        (void)interactor.downloadSettings(deviceId);
-                        continue;
-                    }
-                    const QVariant echoed = interactor.getSetting(deviceId, fw, settingName, col);
-                    if (!echoed.isValid() || !variantSettingEqual(echoed, next))
-                    {
-                        (void)interactor.setSetting(deviceId, fw, settingName, col, cur);
-                        (void)interactor.uploadSettings(deviceId);
-                        (void)interactor.downloadSettings(deviceId);
-                        continue;
-                    }
-                    if (!interactor.setSetting(deviceId, fw, settingName, col, cur))
-                    {
-                        (void)interactor.downloadSettings(deviceId);
-                        continue;
-                    }
-                    if (!interactor.uploadSettings(deviceId))
-                    {
-                        (void)interactor.downloadSettings(deviceId);
-                        continue;
-                    }
-                    (void)interactor.downloadSettings(deviceId);
-                    chosen = next;
+                    okAll = false;
                     break;
                 }
-                if (!chosen.has_value())
+                baselinePerChannel.push_back(v);
+            }
+            if (!okAll)
+                continue;
+
+            const QVariant schemaStep = lookupSchemaStep(schemaDoc, fw, settingName);
+            const std::vector<QVariant> candidates = perturbationCandidates(baseline0, schemaStep);
+            if (candidates.empty())
+                continue;
+
+            for (const QVariant &new0 : candidates)
+            {
+                if (!interactor.setSetting(deviceId, fw, settingName, 0, new0))
                     continue;
-                out.push_back(SettingSlot{fw, settingName, col, cur, chosen.value()});
+                if (!interactor.uploadSettings(deviceId))
+                {
+                    (void)interactor.applyConfigurationFile(deviceId, dconfPath);
+                    (void)interactor.downloadSettings(deviceId);
+                    continue;
+                }
+
+                if (!interactor.downloadSettings(deviceId))
+                {
+                    (void)interactor.applyConfigurationFile(deviceId, dconfPath);
+                    (void)interactor.downloadSettings(deviceId);
+                    continue;
+                }
+
+                bool allMatchNew = true;
+                bool allDifferentFromOld = true;
+                for (int ch = 1; ch <= channelCount; ++ch)
+                {
+                    const QVariant v = interactor.getSetting(deviceId, fw, settingName, ch);
+                    if (!v.isValid())
+                    {
+                        allMatchNew = false;
+                        allDifferentFromOld = false;
+                        break;
+                    }
+                    if (!variantSettingEqual(v, new0))
+                        allMatchNew = false;
+                    if (!variantSettingDifferent(v, baselinePerChannel[static_cast<size_t>(ch - 1)]))
+                        allDifferentFromOld = false;
+                }
+
+                (void)interactor.applyConfigurationFile(deviceId, dconfPath);
+                (void)interactor.downloadSettings(deviceId);
+
+                if (!allMatchNew || !allDifferentFromOld)
+                    continue;
+
+                out.fwTypeName = fw;
+                out.name = settingName;
+                out.baseline0 = baseline0;
+                out.baselinePerChannel = std::move(baselinePerChannel);
+                out.new0 = new0;
+                return true;
             }
         }
     }
-    return out;
+    return false;
 }
 
 }
 
-class ConfigFileTest : public QObject
+class ZeroColumnTest : public QObject
 {
     Q_OBJECT
 
   private slots:
-    void device_configuration_file_scenario();
+    void zero_column_propagates_to_channels();
 };
 
-void ConfigFileTest::device_configuration_file_scenario()
+void ZeroColumnTest::zero_column_propagates_to_channels()
 {
-    // 1. Create an interactor and wait until at least one device appears (USB/network discovery).
     DigitizerInteractor interactor;
 
     QVERIFY2(waitForAnyDevice(interactor, kDiscoveryTimeoutMs),
              "No device discovered within timeout — connect a device and rerun.");
 
-    // 2. Pick the first discovered device id for the rest of the scenario.
     const int64_t deviceId = interactor.devices().firstKey();
-
-    // 3. Open a session with the device.
     QVERIFY2(interactor.connectDevice(deviceId), "connectDevice failed.");
 
-    // 4. Ensure firmware JSON schema and current values are cached (short poll after connect).
     QVERIFY2(waitForSettingsCacheReady(interactor, deviceId, kSchemaWaitMs),
              "Firmware schema/settings not available within 1 s after connect (download/cache).");
 
-    // 5. Refresh local settings from hardware before exporting a snapshot.
     QVERIFY2(interactor.downloadSettings(deviceId), "downloadSettings failed before exporting .dconf.");
 
-    // 6. Persist the current device configuration to a temporary .dconf baseline file.
     QTemporaryDir tmp;
     QVERIFY(tmp.isValid());
-    const QString dconfPath = tmp.filePath(QStringLiteral("config_file_test_baseline.dconf"));
+    const QString dconfPath = tmp.filePath(QStringLiteral("zero_column_test_baseline.dconf"));
 
     QVERIFY2(interactor.writeConfigurationFile(deviceId, dconfPath),
              "writeConfigurationFile failed — need cached settings.");
 
-    // 7. For each firmware tab and setting key (column > 0 only), probe writable changes via
-    //    set/upload/revert prechecks; collect slots with valid baseline vs perturbed values.
-    std::vector<SettingSlot> perturbedSettings = collectPerturbableSlots(interactor, deviceId);
-    QVERIFY2(!perturbedSettings.empty(), "No perturbable settings from fwTypeNameList/fwSettingList/getSetting.");
+    QJsonParseError parseError;
+    const QJsonDocument schemaDoc
+        = QJsonDocument::fromJson(interactor.firmwareSettings(deviceId).first.toUtf8(), &parseError);
+    (void)parseError;
 
-    // 8. Apply all perturbed values locally and upload them in bulk. Some settings are normalized by firmware
-    //    when other settings are uploaded together; iteratively drop such conflicting slots until stable.
-    for (int pass = 0; pass < 6; ++pass)
+    const int channelCount = static_cast<int>(interactor.getDeviceChannels(deviceId));
+    QVERIFY2(channelCount >= 1, "Device reports zero channels.");
+
+    PropagationCase c;
+    QVERIFY2(tryFindPropagationCase(interactor, deviceId, schemaDoc, channelCount, dconfPath, c),
+             "No setting found where column 0 successfully propagates to channels 1..N with a valid new value.");
+
+    QVERIFY2(interactor.setSetting(deviceId, c.fwTypeName, c.name, 0, c.new0), "setSetting col 0 failed.");
+    QVERIFY2(interactor.uploadSettings(deviceId), "uploadSettings failed after setting col 0.");
+    QVERIFY2(interactor.downloadSettings(deviceId), "downloadSettings failed after upload.");
+
+    for (int ch = 1; ch <= channelCount; ++ch)
     {
-        for (const SettingSlot &s : perturbedSettings)
-        {
-            QVERIFY2(interactor.setSetting(deviceId, s.fwTypeName, s.name, s.column, s.perturbed),
-                     qPrintable(QStringLiteral("setSetting failed: %1 / %2 col %3")
-                                    .arg(s.fwTypeName, s.name)
-                                    .arg(s.column)));
-        }
-
-        QVERIFY2(interactor.uploadSettings(deviceId), "uploadSettings failed after bulk change.");
-        QVERIFY2(interactor.downloadSettings(deviceId), "downloadSettings failed after upload.");
-
-        std::vector<size_t> mismatched;
-        mismatched.reserve(perturbedSettings.size());
-        for (size_t i = 0; i < perturbedSettings.size(); ++i)
-        {
-            const SettingSlot &s = perturbedSettings[i];
-            const QVariant v = interactor.getSetting(deviceId, s.fwTypeName, s.name, s.column);
-            if (!v.isValid() || !variantSettingEqual(v, s.perturbed))
-                mismatched.push_back(i);
-        }
-
-        if (mismatched.empty())
-            break;
-
-        if (mismatched.size() == perturbedSettings.size())
-        {
-            const SettingSlot &s = perturbedSettings.front();
-            const QVariant v = interactor.getSetting(deviceId, s.fwTypeName, s.name, s.column);
-            QVERIFY2(v.isValid() && variantSettingEqual(v, s.perturbed),
-                     qPrintable(QStringLiteral("device value mismatch after upload: %1 / %2 col %3")
-                                    .arg(s.fwTypeName, s.name)
-                                    .arg(s.column)));
-        }
-
-        std::vector<SettingSlot> kept;
-        kept.reserve(perturbedSettings.size() - mismatched.size());
-        for (size_t i = 0; i < perturbedSettings.size(); ++i)
-        {
-            if (!std::ranges::binary_search(mismatched, i))
-                kept.push_back(perturbedSettings[i]);
-        }
-        perturbedSettings = std::move(kept);
-
-        const ConfigurationFileResult restore = interactor.applyConfigurationFile(deviceId, dconfPath);
-        QVERIFY2(restore.status == ConfigurationFileStatus::Applied,
-                 qPrintable(QStringLiteral("applyConfigurationFile: %1").arg(restore.message)));
-        QVERIFY2(interactor.downloadSettings(deviceId), "downloadSettings failed after restore before retry.");
-        QVERIFY2(!perturbedSettings.empty(), "All settings were dropped as conflicting in bulk upload.");
+        const QVariant v = interactor.getSetting(deviceId, c.fwTypeName, c.name, ch);
+        QVERIFY2(v.isValid(), qPrintable(QStringLiteral("getSetting invalid: %1 / %2 col %3")
+                                             .arg(c.fwTypeName, c.name)
+                                             .arg(ch)));
+        QVERIFY2(variantSettingEqual(v, c.new0),
+                 qPrintable(QStringLiteral("col 0 did not propagate: %1 / %2 col %3")
+                                .arg(c.fwTypeName, c.name)
+                                .arg(ch)));
+        QVERIFY2(variantSettingDifferent(v, c.baselinePerChannel[static_cast<size_t>(ch - 1)]),
+                 qPrintable(QStringLiteral("channel did not change vs baseline: %1 / %2 col %3")
+                                .arg(c.fwTypeName, c.name)
+                                .arg(ch)));
     }
 
-    // 10. Restore configuration from the saved .dconf (should overwrite the perturbations).
     const ConfigurationFileResult applied = interactor.applyConfigurationFile(deviceId, dconfPath);
     QVERIFY2(applied.status == ConfigurationFileStatus::Applied,
              qPrintable(QStringLiteral("applyConfigurationFile: %1").arg(applied.message)));
 
     QVERIFY2(interactor.downloadSettings(deviceId), "downloadSettings failed after apply .dconf.");
 
-    // 11. Confirm every previously perturbed slot matches the original baseline again.
-    for (const SettingSlot &s : perturbedSettings)
+    for (int ch = 1; ch <= channelCount; ++ch)
     {
-        const QVariant v = interactor.getSetting(deviceId, s.fwTypeName, s.name, s.column);
-        QVERIFY2(v.isValid(), qPrintable(QStringLiteral("getSetting invalid after apply: %1 / %2 col %3")
-                                             .arg(s.fwTypeName, s.name)
-                                            .arg(s.column)));
-        QVERIFY2(variantSettingEqual(v, s.baseline),
-                 qPrintable(QStringLiteral("after .dconf apply expected baseline: %1 / %2 col %3")
-                                .arg(s.fwTypeName, s.name)
-                                .arg(s.column)));
+        const QVariant v = interactor.getSetting(deviceId, c.fwTypeName, c.name, ch);
+        QVERIFY2(v.isValid(), qPrintable(QStringLiteral("getSetting invalid after restore: %1 / %2 col %3")
+                                             .arg(c.fwTypeName, c.name)
+                                             .arg(ch)));
+        QVERIFY2(variantSettingEqual(v, c.baselinePerChannel[static_cast<size_t>(ch - 1)]),
+                 qPrintable(QStringLiteral("restore mismatch: %1 / %2 col %3")
+                                .arg(c.fwTypeName, c.name)
+                                .arg(ch)));
     }
 
-    // 12. Tear down the connection.
     (void)interactor.disconnectDevice(deviceId);
 }
 
@@ -512,8 +478,9 @@ int main(int argc, char *argv[])
 
     int ac = storage.size();
     QCoreApplication app(ac, av.data());
-    ConfigFileTest test;
+    ZeroColumnTest test;
     return QTest::qExec(&test, ac, av.data());
 }
 
-#include "tst_config_file_test.moc"
+#include "tst_zero_column_test.moc"
+
