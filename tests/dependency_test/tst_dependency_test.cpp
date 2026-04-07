@@ -105,6 +105,14 @@ static std::optional<double> evalExpressionWithMuParser(QAbstractItemModel &mode
     if (expr.isEmpty())
         return std::nullopt;
 
+    const auto toMuString = [](const QString &s) -> mu::string_type {
+#if defined(_WIN32) || defined(_WIN64)
+        return s.toStdWString();
+#else
+        return s.toStdString();
+#endif
+    };
+
     mu::Parser p;
     QMap<QString, double> currentValues;
 
@@ -116,12 +124,12 @@ static std::optional<double> evalExpressionWithMuParser(QAbstractItemModel &mode
         if (!varNames.contains(name))
             continue;
         currentValues[name] = model.data(idx, Qt::DisplayRole).toDouble();
-        p.DefineVar(name.toStdWString(), &currentValues[name]);
+        p.DefineVar(toMuString(name), &currentValues[name]);
     }
 
     try
     {
-        p.SetExpr(expr.toStdWString());
+        p.SetExpr(toMuString(expr));
         const double r = p.Eval();
         if (!isFiniteDouble(r))
             return std::nullopt;
