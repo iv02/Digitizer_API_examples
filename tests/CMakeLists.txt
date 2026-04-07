@@ -1,2 +1,3 @@
 add_subdirectory(config_file_test)
 add_subdirectory(zero_column_test)
+add_subdirectory(dependency_test)
