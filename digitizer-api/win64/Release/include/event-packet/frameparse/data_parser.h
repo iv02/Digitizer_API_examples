@@ -29,6 +29,9 @@ private:
     quint32 m_expectedDeviceId{0};
     ParsingMode m_parsingMode{ParsingMode::Normal};
     QByteArray m_buffer;
+    qsizetype m_lastBufferedTailSize{0};
+    QByteArray m_lastBufferedTailPrefix;
+    int m_stalledTailIterations{0};
 };
 
 } // namespace network

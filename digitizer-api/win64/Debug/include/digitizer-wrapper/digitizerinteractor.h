@@ -26,9 +26,7 @@ enum class FWType
     Device = 0,
     PHA,
     PSD,
-    WAVEFORM,
-    SHORT_PHA,
-    SHORT_PSD
+    WAVEFORM
 };
 
 enum class ConfigurationFileStatus
@@ -47,14 +45,12 @@ struct ConfigurationFileResult
     QString message{};
 };
 
-constexpr std::array<const char *, 6> FWTypeName 
+constexpr std::array<const char *, 4> FWTypeName 
 {
     "Device",
     "PHA",
     "PSD", 
-    "WAVEFORM",
-    "SHORT_PHA",
-    "SHORT_PSD",
+    "WAVEFORM"
 };
 
 class DigitizerInteractor

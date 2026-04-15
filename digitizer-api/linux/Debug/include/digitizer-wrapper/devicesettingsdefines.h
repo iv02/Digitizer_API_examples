@@ -9,15 +9,12 @@ constexpr auto device_table_tag = "Device";
 constexpr auto psd_table_tag = "PSD";
 constexpr auto pha_table_tag = "PHA";
 constexpr auto waveform_table_tag = "WAVEFORM";
-constexpr auto short_pha_table_tag = "SHORT_PHA";
-constexpr auto short_psd_table_tag = "SHORT_PSD";
 constexpr auto none_table_tag = "NONE";
 
 constexpr auto psd_setting_value = 0;
 constexpr auto pha_setting_value = 1;
 constexpr auto waveform_setting_value = 2;
-constexpr auto short_pha_setting_value = 3;
-constexpr auto short_psd_setting_value = 4;
+
 } // namespace device_settings
 
 namespace dependency

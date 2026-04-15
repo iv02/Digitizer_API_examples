@@ -30,6 +30,7 @@ class EventAssembler : public QObject
 
   public slots:
     void onParsedPackets(const network::ParsedPacketList &packets);
+    void resetContractChecks();
 
   private:
     void pushInfoPacket(const QSharedPointer<EventPacket> &info);
