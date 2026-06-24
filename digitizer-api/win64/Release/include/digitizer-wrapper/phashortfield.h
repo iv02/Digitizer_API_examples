@@ -8,21 +8,23 @@ namespace client
 
 enum class PhaShortField : quint16
 {
-    Rtc16 = static_cast<quint16>(1u << 0),
-    Rtc32 = static_cast<quint16>(1u << 1),
-    Rtc48 = static_cast<quint16>(1u << 2),
-    Rtc64 = static_cast<quint16>(1u << 3),
+    isChannelEnabled = static_cast<quint16>(1u << 0),
 
-    TrapBaseline = static_cast<quint16>(1u << 4),
-    TrapHeightMean = static_cast<quint16>(1u << 5),
-    TrapHeightMax = static_cast<quint16>(1u << 6),
+    Rtc16 = static_cast<quint16>(1u << 1),
+    Rtc32 = static_cast<quint16>(1u << 2),
+    Rtc48 = static_cast<quint16>(1u << 3),
+    Rtc64 = static_cast<quint16>(1u << 4),
 
-    EventCounter = static_cast<quint16>(1u << 7),
+    TrapBaseline = static_cast<quint16>(1u << 5),
+    TrapHeightMean = static_cast<quint16>(1u << 6),
+    TrapHeightMax = static_cast<quint16>(1u << 7),
 
-    RcCr2Y1 = static_cast<quint16>(1u << 8),
-    RcCr2Y2 = static_cast<quint16>(1u << 9),
+    EventCounter = static_cast<quint16>(1u << 8),
 
-    SpectrumBin = static_cast<quint16>(1u << 10),
+    RcCr2Y1 = static_cast<quint16>(1u << 9),
+    RcCr2Y2 = static_cast<quint16>(1u << 10),
+
+    SpectrumBin = static_cast<quint16>(1u << 11)
 };
 
 Q_DECLARE_FLAGS(PhaShortFields, PhaShortField)

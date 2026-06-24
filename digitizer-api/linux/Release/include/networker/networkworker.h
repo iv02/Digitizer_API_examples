@@ -1,14 +1,15 @@
 #pragma once
-#include "networkenums.h"
+
 #include "frameparse/packets/eventpackettype.h"
 #include "frameparse/packetwrappers/eventdata.h"
+#include "networkenums.h"
 #include "threaded.h"
-
-#include "measurement_data_pipeline.h"
 
 #include <QObject>
 #include <QSharedPointer>
+#include <QTcpServer>
 #include <QUuid>
+
 #include <chrono>
 #include <deque>
 #include <map>
@@ -16,7 +17,6 @@
 
 class DiscoverBroadcastMessage;
 class QUdpSocket;
-class QTcpServer;
 class QTimer;
 
 namespace client
@@ -32,6 +32,7 @@ enum class DataType;
 
 namespace network
 {
+class MeasurementDataPipeline;
 enum class EventPacketType : uint8_t;
 class EventPacket;
 class MaintainingDeviceConnector;
@@ -56,7 +57,7 @@ class NetworkWorker final : public QObject
   private slots:
     void onConnectionLost(int64_t id) noexcept;
     void onDiscoverLostTimeout() noexcept;
-    void onEventPairsReady(const std::vector<network::EventData> &pairs) const;
+    void onEventPairsReady(const std::vector<EventData> &pairs) const;
     void onCommandDeviceNetworkEvent(int64_t id, NETWORK_DEVICE_EVENT event, const QVariantList &parameters);
 
   private:
@@ -65,29 +66,25 @@ class NetworkWorker final : public QObject
     void setupSockets();
     void setupConnections();
     void processPendingDiscoverData();
-    void processPendingConnection();
     void flushBuffer() const;
-    void cancelMeasurementWithTimeTimer(int64_t id);
-    void onMeasurementStopped(int64_t id);
-    void onMeasurementStarted(int64_t id);
-    void startMeasurementWithTimeTimer(int64_t id, uint durationMs);
 
   private:
     QUdpSocket *m_discover{nullptr};
-    QTcpServer *m_data{nullptr};
+    std::map<int64_t, std::unique_ptr<QTcpServer>> m_dataServers{};
 
     QUuid m_softwareId{};
     std::map<int64_t, client::Threaded<MaintainingDeviceConnector>> m_maintainConnectors{};
     std::map<int64_t, client::Threaded<CommandDeviceConnector>> m_commandConnectors{};
     std::map<int64_t, QSharedPointer<MeasurementDataPipeline>> m_pipelines{};
     std::map<quint16, int64_t> m_ports{};
-    std::map<int64_t, QTimer *> m_measurementWithTimeTimers{};
 
     std::map<int64_t, std::chrono::time_point<std::chrono::steady_clock>> m_discoverTimes{};
     QTimer *m_discoverLostTimer;
 
-    mutable std::deque<EventData> m_dataBuffer{};
+    mutable std::map<int64_t, std::deque<EventData>> m_dataBuffers{};
+
     QTimer *m_flushTimer{nullptr};
     bool m_useBatchMode{false};
 };
+
 } // namespace network

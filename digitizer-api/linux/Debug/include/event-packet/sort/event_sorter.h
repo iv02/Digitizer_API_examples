@@ -1,7 +1,7 @@
 #pragma once
 
 #include "frameparse/parsed_packet.h"
-#include "../parsing_mode.h"
+#include "parsing_mode.h"
 
 #include <QElapsedTimer>
 #include <QObject>
@@ -24,8 +24,6 @@ class EventSorter final : public QObject
 
   public slots:
     void onParsedPackets(const network::ParsedPacketList &packets);
-    void onMeasurementStarted();
-    void onMeasurementStopped();
 
   private:
     struct GreaterRtc
@@ -33,14 +31,17 @@ class EventSorter final : public QObject
         bool operator()(const ParsedPacket &a, const ParsedPacket &b) const;
     };
 
-    void flushSafe();
-    void flushAll();
+    void flush();
     void checkSortedAndMonotonic(const ParsedPacketList &packets) const;
 
+  private:
     std::priority_queue<ParsedPacket, std::vector<ParsedPacket>, GreaterRtc> m_queue;
+
     quint64 m_windowSize;
     quint64 m_maxRtcSeen{0};
     quint64 m_lastEmittedRtc{0};
+
+    int m_idleCycles{0};
     mutable QElapsedTimer m_crossBatchWarnThrottle;
     ParsingMode m_parsingMode;
 };

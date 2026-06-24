@@ -35,7 +35,7 @@ class FirmwareSettingsTableModel : public QAbstractTableModel, public IAbstractS
     void resetSettings() override;
     QAbstractItemModel *model() override;
 
-    [[nodiscard]] QVariantList getSettings() const override;
+    [[nodiscard]] QVariantList getSettings(FirmwareSettingsType type = FirmwareSettingsType::Default) const override;
 
   public slots:
     void setSettingsSchema(const QJsonObject &schema, int channelsNumber) override;

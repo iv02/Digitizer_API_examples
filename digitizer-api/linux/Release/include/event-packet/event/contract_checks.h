@@ -21,24 +21,13 @@ template <ParsingMode Mode> class ContractChecks;
 template <> class ContractChecks<ParsingMode::Normal>
 {
   public:
-    void reset() noexcept {}
     void inspect(const ParsedPacket &, EventPacketType) noexcept {}
-    void logOrphanInfoPacket(const QSharedPointer<EventPacket> &) const noexcept {}
     void logOrphanWaveformPacket(const QSharedPointer<EventPacket> &) const noexcept {}
-
-    template <typename PacketRange> void logOrphanInfoPackets(const PacketRange &) const noexcept {}
-    template <typename PacketRange> void logOrphanWaveformPackets(const PacketRange &) const noexcept {}
 };
 
 template <> class ContractChecks<ParsingMode::Paranoid>
 {
   public:
-    void reset()
-    {
-        m_channelStates.clear();
-        m_inferredMode = StreamMode::Unknown;
-    }
-
     void inspect(const ParsedPacket &packet, EventPacketType packetType)
     {
         const ContractContext context = makeContractContext(packet);
@@ -106,19 +95,6 @@ template <> class ContractChecks<ParsingMode::Paranoid>
         state.lastPacketType = packetType;
     }
 
-    void logOrphanInfoPacket(const QSharedPointer<EventPacket> &infoPacket) const
-    {
-        if (!infoPacket)
-            return;
-
-        const EventPacketHeader header = infoPacket->header();
-        if (!shouldLogOrphanInfo(header.packetType))
-            return;
-
-        qInfo() << "[PARANOID][Contract] Orphan info packet without waveform. channel:" << header.channelId << "rtc:" << header.rtc
-                << "packetType:" << static_cast<int>(header.packetType);
-    }
-
     void logOrphanWaveformPacket(const QSharedPointer<EventPacket> &waveformPacket) const
     {
         if (!waveformPacket)
@@ -132,52 +108,7 @@ template <> class ContractChecks<ParsingMode::Paranoid>
                 << "packetType:" << static_cast<int>(header.packetType);
     }
 
-    template <typename PacketRange> void logOrphanInfoPackets(const PacketRange &pendingInfo) const
-    {
-        for (const auto &infoPacket : pendingInfo)
-        {
-            if (!infoPacket)
-                continue;
-
-            const EventPacketHeader header = infoPacket->header();
-            if (!shouldLogOrphanInfo(header.packetType))
-                continue;
-
-            qInfo() << "[PARANOID][Contract] Orphan info packet without waveform. channel:" << header.channelId << "rtc:" << header.rtc
-                    << "packetType:" << static_cast<int>(header.packetType);
-        }
-    }
-
-    template <typename PacketRange> void logOrphanWaveformPackets(const PacketRange &pendingWaveform) const
-    {
-        for (const auto &waveformPacket : pendingWaveform)
-        {
-            if (!waveformPacket)
-                continue;
-            const EventPacketHeader header = waveformPacket->header();
-            if (!shouldLogOrphanWaveform(header.packetType))
-                continue;
-            qInfo() << "[PARANOID][Contract] Orphan waveform packet without info. channel:" << header.channelId << "rtc:" << header.rtc
-                    << "packetType:" << static_cast<int>(header.packetType);
-        }
-    }
-
   private:
-    static bool shouldLogOrphanInfo(const EventPacketType packetType)
-    {
-        switch (packetType)
-        {
-        case EventPacketType::PsdEventInfo:
-        case EventPacketType::PsdEventInfoV2:
-        case EventPacketType::PhaEventInfo:
-        case EventPacketType::ReducedEventInfoPSD:
-        case EventPacketType::ReducedEventInfoPHA:
-            return false;
-        default:
-            return false;
-        }
-    }
-
     static bool shouldLogOrphanWaveform(const EventPacketType packetType)
     {
         return packetType != EventPacketType::InterleavedWaveform && packetType != EventPacketType::SplitUpWaveform;

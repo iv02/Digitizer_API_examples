@@ -3,11 +3,11 @@
 if("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" LESS 2.8)
    message(FATAL_ERROR "CMake >= 2.8.0 required")
 endif()
-if(CMAKE_VERSION VERSION_LESS "3.0.0")
-   message(FATAL_ERROR "CMake >= 3.0.0 required")
+if(CMAKE_VERSION VERSION_LESS "2.8.3")
+   message(FATAL_ERROR "CMake >= 2.8.3 required")
 endif()
 cmake_policy(PUSH)
-cmake_policy(VERSION 3.0.0...3.28)
+cmake_policy(VERSION 2.8.3...3.26)
 #----------------------------------------------------------------
 # Generated CMake target import file.
 #----------------------------------------------------------------
@@ -19,7 +19,7 @@ set(CMAKE_IMPORT_FILE_VERSION 1)
 set(_cmake_targets_defined "")
 set(_cmake_targets_not_defined "")
 set(_cmake_expected_targets "")
-foreach(_cmake_expected_target IN ITEMS digiscope-api::protobuf-api digiscope-api::event-packet digiscope-api::networker digiscope-api::configuration-io digiscope-api::muparser digiscope-api::digitizer-wrapper digiscope-api::valijson_interface digiscope-api::rapidjson_interface)
+foreach(_cmake_expected_target IN ITEMS digiscope-api::protobuf-api digiscope-api::event-packet digiscope-api::networker digiscope-api::configuration-io digiscope-api::muparser digiscope-api::digitizer-wrapper)
   list(APPEND _cmake_expected_targets "${_cmake_expected_target}")
   if(TARGET "${_cmake_expected_target}")
     list(APPEND _cmake_targets_defined "${_cmake_expected_target}")
@@ -173,7 +173,7 @@ add_library(digiscope-api::digitizer-wrapper STATIC IMPORTED)
 
 set_target_properties(digiscope-api::digitizer-wrapper PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include/digitizer-wrapper"
-  INTERFACE_LINK_LIBRARIES "Qt6::Core;Qt6::Network;Qt6::StateMachine;digiscope-api::networker;digiscope-api::muparser;\$<LINK_ONLY:digiscope-api::event-packet>;\$<LINK_ONLY:digiscope-api::configuration-io>;\$<LINK_ONLY:digiscope-api::valijson_interface>;\$<LINK_ONLY:digiscope-api::rapidjson_interface>"
+  INTERFACE_LINK_LIBRARIES "Qt6::Core;Qt6::Network;Qt6::StateMachine;digiscope-api::networker;digiscope-api::muparser;valijson;\$<LINK_ONLY:digiscope-api::event-packet>;\$<LINK_ONLY:digiscope-api::configuration-io>"
 )
 
 if(NOT CMAKE_VERSION VERSION_LESS "3.23.0")
@@ -191,11 +191,9 @@ else()
   )
 endif()
 
-# Create imported target digiscope-api::valijson_interface
-add_library(digiscope-api::valijson_interface INTERFACE IMPORTED)
-
-# Create imported target digiscope-api::rapidjson_interface
-add_library(digiscope-api::rapidjson_interface INTERFACE IMPORTED)
+if(CMAKE_VERSION VERSION_LESS 2.8.12)
+  message(FATAL_ERROR "This file relies on consumers using CMake 2.8.12 or greater.")
+endif()
 
 # Load information for each installed configuration.
 file(GLOB _cmake_config_files "${CMAKE_CURRENT_LIST_DIR}/digiscope-api-targets-*.cmake")
@@ -210,12 +208,9 @@ set(_IMPORT_PREFIX)
 
 # Loop over all imported files and verify that they actually exist
 foreach(_cmake_target IN LISTS _cmake_import_check_targets)
-  if(CMAKE_VERSION VERSION_LESS "3.28"
-      OR NOT DEFINED _cmake_import_check_xcframework_for_${_cmake_target}
-      OR NOT IS_DIRECTORY "${_cmake_import_check_xcframework_for_${_cmake_target}}")
-    foreach(_cmake_file IN LISTS "_cmake_import_check_files_for_${_cmake_target}")
-      if(NOT EXISTS "${_cmake_file}")
-        message(FATAL_ERROR "The imported target \"${_cmake_target}\" references the file
+  foreach(_cmake_file IN LISTS "_cmake_import_check_files_for_${_cmake_target}")
+    if(NOT EXISTS "${_cmake_file}")
+      message(FATAL_ERROR "The imported target \"${_cmake_target}\" references the file
    \"${_cmake_file}\"
 but this file does not exist.  Possible reasons include:
 * The file was deleted, renamed, or moved to another location.
@@ -224,9 +219,8 @@ but this file does not exist.  Possible reasons include:
    \"${CMAKE_CURRENT_LIST_FILE}\"
 but not all the files it references.
 ")
-      endif()
-    endforeach()
-  endif()
+    endif()
+  endforeach()
   unset(_cmake_file)
   unset("_cmake_import_check_files_for_${_cmake_target}")
 endforeach()

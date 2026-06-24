@@ -42,7 +42,7 @@ class DeviceSettingsTableModel : public QAbstractTableModel, public IAbstractSet
   public slots:
     void setSettingsSchema(const QJsonObject &schema, int channelsNumber) override;
     void setSettingsValues(const QJsonObject &values) override;
-    QVariantList getSettings() const override;
+    QVariantList getSettings(FirmwareSettingsType type = FirmwareSettingsType::Default) const override;
     QJsonObject getCurrentSettingsObject() override;
     [[nodiscard]] bool hasSettingsChanges() const override;
 

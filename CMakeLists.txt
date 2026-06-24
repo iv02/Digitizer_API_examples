@@ -9,6 +9,18 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(FETCHCONTENT_QUIET OFF)
 
+if(NOT TARGET valijson)
+    add_library(valijson INTERFACE)
+    target_compile_definitions(valijson INTERFACE VALIJSON_USE_EXCEPTIONS=1)
+    if(WIN32)
+        target_include_directories(valijson INTERFACE
+            "${CMAKE_SOURCE_DIR}/digitizer-api/win64/${CMAKE_BUILD_TYPE}/include/valijson")
+    else()
+        target_include_directories(valijson INTERFACE
+            "${CMAKE_SOURCE_DIR}/digitizer-api/linux/${CMAKE_BUILD_TYPE}/include/valijson")
+    endif()
+endif()
+
 if(WIN32)
 
 set(absl_DIR "${CMAKE_SOURCE_DIR}/libs/grpc/${CMAKE_BUILD_TYPE}/lib/cmake/absl")

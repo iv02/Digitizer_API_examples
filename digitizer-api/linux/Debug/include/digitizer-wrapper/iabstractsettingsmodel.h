@@ -32,6 +32,12 @@ enum SettingRole
     DefaultRole
 };
 
+enum class FirmwareSettingsType : uint8_t
+{
+    Default = 0, // full set of settings
+    Short        // subset of settings used for the short packet
+};
+
 enum class ItemState
 {
     Normal = 0,
@@ -55,7 +61,7 @@ class IAbstractSettingsModel
 
     virtual void setSettingsSchema(const QJsonObject &schema, int channelsNumber) = 0;
     virtual void setSettingsValues(const QJsonObject &values) = 0;
-    [[nodiscard]] virtual QVariantList getSettings() const = 0;
+    [[nodiscard]] virtual QVariantList getSettings(FirmwareSettingsType type = FirmwareSettingsType::Default) const = 0;
     virtual QJsonObject getCurrentSettingsObject() = 0;
     [[nodiscard]] virtual bool hasSettingsChanges() const = 0;
     virtual void commitSettings() = 0;

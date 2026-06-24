@@ -3,6 +3,7 @@
 #include "networkenums.h"
 
 #include <QStateMachine>
+#include <QTimer>
 
 namespace device
 {
@@ -37,25 +38,25 @@ class DeviceStateMachine : public QStateMachine
 
   signals:
     // inside API
-    void commandConnect() const;
-    void commandDisconnect() const;
-    void commandMeasure() const;
-    void commandStop() const;
-    void commandStartUploadFirmware() const;
+    void commandConnect();
+    void commandDisconnect();
+    void commandMeasure();
+    void commandStop();
+    void commandStartUploadFirmware();
 
-    void eventConnected() const;
-    void eventConnectionError() const;
-    void eventDisconnected() const;
-    void eventDisconnectionError() const;
-    void eventMeasureStarted() const;
-    void eventStartMeasureError() const;
-    void eventMeasureStopped() const;
-    void eventStopMeasureError() const;
-    void eventFirmwareUploadSuccess() const;
-    void eventFirmwareUploadError() const;
+    void eventConnected();
+    void eventConnectionError();
+    void eventDisconnected();
+    void eventDisconnectionError();
+    void eventMeasureStarted();
+    void eventStartMeasureError();
+    void eventMeasureStopped();
+    void eventStopMeasureError();
+    void eventFirmwareUploadSuccess();
+    void eventFirmwareUploadError();
 
     // outside API
-    void stateChanged(QFlags<DeviceStateFlag>) const;
+    void stateChanged(QFlags<DeviceStateFlag>);
     void deviceCommandEmit(network::NETWORK_DEVICE_COMMAND command, QVariantList parameters);
 
   public:
@@ -65,8 +66,8 @@ class DeviceStateMachine : public QStateMachine
     QFlags<DeviceStateFlag> stateFlags() const;
 
   public slots:
-    void onDeviceNetworkEvent(network::NETWORK_DEVICE_EVENT event, QVariantList parameters);
-    void onDeviceCommandReceived(network::NETWORK_DEVICE_COMMAND command, QVariantList parameters) const;
+    void onDeviceNetworkEvent(network::NETWORK_DEVICE_EVENT event, const QVariantList &parameters);
+    void onDeviceCommandReceived(network::NETWORK_DEVICE_COMMAND command, QVariantList parameters);
 
   private:
     void setupStates();
@@ -74,16 +75,22 @@ class DeviceStateMachine : public QStateMachine
     void setupStateChangeActions();
 
     void buildState(State state);
-    void buildTransition(State stateFrom, State stateTo, void (DeviceStateMachine::*signal)() const) const;
+    void buildTransition(State stateFrom, State stateTo, void (DeviceStateMachine::*signal)()) const;
 
   private:
     bool m_hasShemaAndValues{false};
+
     mutable network::NETWORK_DEVICE_COMMAND m_pendingUploadCommand{network::NETWORK_DEVICE_COMMAND::UPDATE_DEVICE_FIRMWARE};
+    mutable network::NETWORK_DEVICE_COMMAND m_pendingMeasureCommand{network::NETWORK_DEVICE_COMMAND::START_DEVICE_MEASUREMENT};
+
+    mutable QVariantList m_pendingMeasureParameters{};
     mutable QVariantList m_pendingUploadParameters{};
+
+    QTimer *m_measureTimer{nullptr};
+    mutable int m_measurementDurationMs{0};
 
     std::map<State, QState *> m_states{};
     QFlags<DeviceStateFlag> m_stateFlags{};
-
 };
 
 } // namespace device

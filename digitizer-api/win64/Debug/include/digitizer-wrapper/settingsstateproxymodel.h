@@ -49,7 +49,7 @@ class SettingsStateProxyModel : public QIdentityProxyModel, public IAbstractSett
   public slots:
     void setSettingsSchema(const QJsonObject &schema, int channelsNumber) override;
     void setSettingsValues(const QJsonObject &values) override;
-    QVariantList getSettings() const override;
+    QVariantList getSettings(FirmwareSettingsType type = FirmwareSettingsType::Default) const override;
     QJsonObject getCurrentSettingsObject() override;
 
   private:

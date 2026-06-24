@@ -27,6 +27,7 @@ class SplitUpPacketAssembler : public QObject
     ~SplitUpPacketAssembler() override;
 
     std::optional<WaveformNetworkPacket> processSplitUpPacket(const WaveformNetworkPacket &packet);
+    void clear();
 
   private:
     std::map<int, std::map<quint16, WaveformNetworkPacket>> m_data;
