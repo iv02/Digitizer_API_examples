@@ -14,5 +14,5 @@
 ```bash
 cmake -S . -B build \
   -DDIGITIZER_API_EXAMPLES_PREBUILD_LIBS_ROOT=/path/to/libs \
-  -DDIGITIZER_API_EXAMPLES_API_ROOT=/path/to/digitizer-api
+  -DDIGITIZER_API_EXAMPLES_API_ROOT=/path/to/platform/api/install
 ```
