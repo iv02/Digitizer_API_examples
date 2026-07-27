@@ -9,25 +9,31 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(FETCHCONTENT_QUIET OFF)
 
+set(DIGITIZER_API_EXAMPLES_PREBUILD_LIBS_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/libs"
+    CACHE PATH "Root directory of prebuilt third-party libraries")
+set(DIGITIZER_API_EXAMPLES_API_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/digitizer-api"
+    CACHE PATH "Root directory of the prebuilt Digitizer API")
+
+set(absl_DIR "${DIGITIZER_API_EXAMPLES_PREBUILD_LIBS_ROOT}/grpc/${CMAKE_BUILD_TYPE}/lib/cmake/absl")
+set(utf8_range_DIR "${DIGITIZER_API_EXAMPLES_PREBUILD_LIBS_ROOT}/grpc/${CMAKE_BUILD_TYPE}/lib/cmake/utf8_range")
+set(protobuf_DIR "${DIGITIZER_API_EXAMPLES_PREBUILD_LIBS_ROOT}/grpc/${CMAKE_BUILD_TYPE}/lib/cmake/protobuf")
+set(gRPC_DIR "${DIGITIZER_API_EXAMPLES_PREBUILD_LIBS_ROOT}/grpc/${CMAKE_BUILD_TYPE}/lib/cmake/grpc")
+
 if(NOT TARGET valijson)
     add_library(valijson INTERFACE)
     target_compile_definitions(valijson INTERFACE VALIJSON_USE_EXCEPTIONS=1)
     if(WIN32)
         target_include_directories(valijson INTERFACE
-            "${CMAKE_SOURCE_DIR}/digitizer-api/win64/${CMAKE_BUILD_TYPE}/include/valijson")
+            "${DIGITIZER_API_EXAMPLES_API_ROOT}/win64/${CMAKE_BUILD_TYPE}/include/valijson")
     else()
         target_include_directories(valijson INTERFACE
-            "${CMAKE_SOURCE_DIR}/digitizer-api/linux/${CMAKE_BUILD_TYPE}/include/valijson")
+            "${DIGITIZER_API_EXAMPLES_API_ROOT}/linux/${CMAKE_BUILD_TYPE}/include/valijson")
     endif()
 endif()
 
 if(WIN32)
 
-set(absl_DIR "${CMAKE_SOURCE_DIR}/libs/grpc/${CMAKE_BUILD_TYPE}/lib/cmake/absl")
-set(utf8_range_DIR "${CMAKE_SOURCE_DIR}/libs/grpc/${CMAKE_BUILD_TYPE}/lib/cmake/utf8_range")
-set(protobuf_DIR "${CMAKE_SOURCE_DIR}/libs/grpc/${CMAKE_BUILD_TYPE}/lib/cmake/protobuf")
-set(gRPC_DIR "${CMAKE_SOURCE_DIR}/libs/grpc/${CMAKE_BUILD_TYPE}/lib/cmake/grpc")
-set(digiscope-api_DIR "${CMAKE_SOURCE_DIR}/digitizer-api/win64/${CMAKE_BUILD_TYPE}/lib/cmake/")
+set(digiscope-api_DIR "${DIGITIZER_API_EXAMPLES_API_ROOT}/win64/${CMAKE_BUILD_TYPE}/lib/cmake/")
 
 find_package(absl CONFIG REQUIRED)
 find_package(utf8_range CONFIG REQUIRED)
@@ -38,7 +44,7 @@ find_package(digiscope-api)
 
 elseif(LINUX)
 
-set(digiscope-api_DIR "${CMAKE_SOURCE_DIR}/digitizer-api/linux/${CMAKE_BUILD_TYPE}/share/")
+set(digiscope-api_DIR "${DIGITIZER_API_EXAMPLES_API_ROOT}/linux/${CMAKE_BUILD_TYPE}/share/")
 
 find_package(absl CONFIG REQUIRED)
 find_package(utf8_range CONFIG REQUIRED)
