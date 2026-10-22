@@ -25,6 +25,16 @@ set_target_properties(digiscope-api::event-packet PROPERTIES
 list(APPEND _cmake_import_check_targets digiscope-api::event-packet )
 list(APPEND _cmake_import_check_files_for_digiscope-api::event-packet "${_IMPORT_PREFIX}/lib/event-packet.lib" )
 
+# Import target "digiscope-api::event-packet-adapter" for configuration "Debug"
+set_property(TARGET digiscope-api::event-packet-adapter APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
+set_target_properties(digiscope-api::event-packet-adapter PROPERTIES
+  IMPORTED_LINK_INTERFACE_LANGUAGES_DEBUG "CXX"
+  IMPORTED_LOCATION_DEBUG "${_IMPORT_PREFIX}/lib/event-packet-adapter.lib"
+  )
+
+list(APPEND _cmake_import_check_targets digiscope-api::event-packet-adapter )
+list(APPEND _cmake_import_check_files_for_digiscope-api::event-packet-adapter "${_IMPORT_PREFIX}/lib/event-packet-adapter.lib" )
+
 # Import target "digiscope-api::networker" for configuration "Debug"
 set_property(TARGET digiscope-api::networker APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
 set_target_properties(digiscope-api::networker PROPERTIES

@@ -2,6 +2,7 @@
 
 #include "networkenums.h"
 
+#include <QString>
 #include <QStateMachine>
 #include <QTimer>
 
@@ -78,6 +79,9 @@ class DeviceStateMachine : public QStateMachine
     void buildTransition(State stateFrom, State stateTo, void (DeviceStateMachine::*signal)()) const;
 
   private:
+    [[nodiscard]] QString activeStateName() const;
+    [[nodiscard]] static QString stateName(State state);
+
     bool m_hasShemaAndValues{false};
 
     mutable network::NETWORK_DEVICE_COMMAND m_pendingUploadCommand{network::NETWORK_DEVICE_COMMAND::UPDATE_DEVICE_FIRMWARE};
@@ -88,6 +92,7 @@ class DeviceStateMachine : public QStateMachine
 
     QTimer *m_measureTimer{nullptr};
     mutable int m_measurementDurationMs{0};
+    mutable bool m_watchdogTimedStopPending{false};
 
     std::map<State, QState *> m_states{};
     QFlags<DeviceStateFlag> m_stateFlags{};

@@ -78,6 +78,9 @@ class Device : public QObject
     [[nodiscard]] QString getDescription() const;
     void setDescription(const QString &description);
 
+    [[nodiscard]] QString deviceErrorText() const;
+    void setDeviceError(uint32_t errorCode, const QString &errorDescription);
+
     //[FIRMWARE SETTINGS]
     [[nodiscard]] QString getFirmwareSettingsSchema() const;
     void setFirmwareSettingsSchema(const QString &);
@@ -121,6 +124,8 @@ class Device : public QObject
         QString armFirmwareVersion;
         QString name;
         QString description;
+        uint32_t errorCode{0};
+        QString errorDescription;
     } m_info{};
 
     struct

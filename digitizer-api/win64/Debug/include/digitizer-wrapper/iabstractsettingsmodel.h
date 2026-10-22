@@ -29,7 +29,10 @@ enum SettingRole
     OldValueRole,
     IsVisibleRole,
     IsReadOnlyRole,
-    DefaultRole
+    DefaultRole,
+    SettingTitleRuRole,
+    SettingDescriptionRuRole,
+    GroupIdRole
 };
 
 enum class FirmwareSettingsType : uint8_t
@@ -88,8 +91,8 @@ class IAbstractSettingsModel
     virtual QString tableTag() const noexcept = 0;
 
     static bool isInt(const QJsonValue &v) noexcept;
-    QVariantMap parseOneOfValues(const SettingItem &item, const QJsonObject &object) const noexcept;
-    int resolveComboBoxDefault(const SettingItem &item, const QJsonObject &object, const QVariantMap &oneOf) noexcept;
+    ComboBoxValues parseOneOfValues(const SettingItem &item, const QJsonObject &object) const noexcept;
+    int resolveComboBoxDefault(const SettingItem &item, const QJsonObject &object, const ComboBoxValues &oneOf) noexcept;
     void testComboBoxEmpty(const SettingItem &item, const QJsonObject &object) const noexcept;
     void testStepNull(const SettingItem &item, const QJsonObject &object, const bool &isDouble) const noexcept;
     std::vector<int> validateAndFixOrderNumbers(const QJsonObject &properties) noexcept;

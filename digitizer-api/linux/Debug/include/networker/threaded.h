@@ -1,6 +1,9 @@
 #pragma once
 #include <QObject>
 #include <QThread>
+#include <QtGlobal>
+
+#include <typeinfo>
 
 namespace client
 {
@@ -28,8 +31,20 @@ template <typename T> class Threaded final : public QObject
 
     ~Threaded() override
     {
+        constexpr int waitTimeoutMs = 5000;
+        const char *typeName = typeid(T).name();
+        qInfo("[SHUTDOWN] Threaded<%s>: quit (running=%d)", typeName, m_thread && m_thread->isRunning());
+        if (!m_thread)
+            return;
+
         m_thread->quit();
-        m_thread->wait();
+        if (!m_thread->wait(waitTimeoutMs))
+        {
+            qWarning("[SHUTDOWN] Threaded<%s>: wait timed out after %d ms, terminating", typeName, waitTimeoutMs);
+            m_thread->terminate();
+            m_thread->wait(1000);
+        }
+        qInfo("[SHUTDOWN] Threaded<%s>: finished", typeName);
     }
 
     template <typename Func, typename... Args> void onStarted(Func slot, Args &&...args)

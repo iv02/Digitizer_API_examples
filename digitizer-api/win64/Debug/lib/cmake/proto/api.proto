@@ -17,6 +17,8 @@ message PingRequest
 message PingResponse
 {
     ConfirmType confirm = 1;
+    uint32 errorCode = 2;
+    string errorDescription = 3;
 };
 
 //[PROTOCOL VERSION]
@@ -53,6 +55,7 @@ message ConnectRequest
     uint32 timestamp = 1;
     string softwareId = 2;
     uint32 port_data = 3;
+    uint64 currentTimestampMks = 4;
 };
 
 message ConnectReply

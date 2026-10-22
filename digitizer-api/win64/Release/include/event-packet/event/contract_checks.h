@@ -1,17 +1,16 @@
 #pragma once
 
-#include "../parsing_mode.h"
-#include "frameparse/packetwrappers/eventpacket.h"
-#include "frameparse/packetwrappers/eventpacketheader.h"
 #include "frameparse/packets/eventpackettype.h"
 #include "frameparse/packets/spectrumtype.h"
-#include "frameparse/parsed_packet.h"
+#include "model/parsed_event.h"
+#include "model/payload_arena.h"
+#include "parsing_mode.h"
 
 #include <QDebug>
 
+#include <cstring>
 #include <map>
 #include <optional>
-#include <type_traits>
 
 namespace network
 {
@@ -21,33 +20,43 @@ template <ParsingMode Mode> class ContractChecks;
 template <> class ContractChecks<ParsingMode::Normal>
 {
   public:
-    void inspect(const ParsedPacket &, EventPacketType) noexcept {}
-    void logOrphanWaveformPacket(const QSharedPointer<EventPacket> &) const noexcept {}
+    void inspect(const ParsedEvent &, PayloadArena *) noexcept {}
+    void logOrphanWaveform(quint16, quint64, EventPacketType) const noexcept {}
+    void reset() noexcept {}
 };
 
 template <> class ContractChecks<ParsingMode::Paranoid>
 {
   public:
-    void inspect(const ParsedPacket &packet, EventPacketType packetType)
+    void inspect(const ParsedEvent &event, PayloadArena *arena)
     {
-        const ContractContext context = makeContractContext(packet);
-
-        if (packetType == EventPacketType::DeviceSpectrum16 || packetType == EventPacketType::DeviceSpectrum32)
+        std::optional<SpectrumType> spectrumType;
+        if ((event.packetType == EventPacketType::DeviceSpectrum16 || event.packetType == EventPacketType::DeviceSpectrum32) && arena)
         {
-            if (!context.spectrumType.has_value())
+            if (const char *bytes = arena->data(event.payload); bytes && event.payload.size >= 22)
             {
-                qWarning() << "[PARANOID][Contract] Spectrum packet without spectrumType metadata. packetType:"
-                           << static_cast<int>(packetType);
-            }
-            else if (*context.spectrumType != SpectrumType::PSDHeight && *context.spectrumType != SpectrumType::PSDQLong &&
-                     *context.spectrumType != SpectrumType::PHAMean && *context.spectrumType != SpectrumType::PHAMax)
-            {
-                qWarning() << "[PARANOID][Contract] Invalid spectrumType value:" << static_cast<int>(*context.spectrumType)
-                           << "packetType:" << static_cast<int>(packetType);
+                quint16 raw{};
+                std::memcpy(&raw, bytes + 20, sizeof(raw));
+                spectrumType = static_cast<SpectrumType>(raw);
             }
         }
 
-        const StreamMode packetMode = streamModeFor(packetType, context.spectrumType);
+        if (event.packetType == EventPacketType::DeviceSpectrum16 || event.packetType == EventPacketType::DeviceSpectrum32)
+        {
+            if (!spectrumType.has_value())
+            {
+                qWarning() << "[PARANOID][Contract] Spectrum packet without spectrumType metadata. packetType:"
+                           << static_cast<int>(event.packetType);
+            }
+            else if (*spectrumType != SpectrumType::PSDHeight && *spectrumType != SpectrumType::PSDQLong &&
+                     *spectrumType != SpectrumType::PHAMean && *spectrumType != SpectrumType::PHAMax)
+            {
+                qWarning() << "[PARANOID][Contract] Invalid spectrumType value:" << static_cast<int>(*spectrumType)
+                           << "packetType:" << static_cast<int>(event.packetType);
+            }
+        }
+
+        const StreamMode packetMode = streamModeFor(event.packetType, spectrumType);
         if (packetMode != StreamMode::Unknown)
         {
             if (m_inferredMode == StreamMode::Unknown)
@@ -58,62 +67,56 @@ template <> class ContractChecks<ParsingMode::Paranoid>
             else if (m_inferredMode != packetMode)
             {
                 qWarning() << "[PARANOID][Contract] Stream mode deviation. expected:" << toString(m_inferredMode)
-                           << "actualFromPacket:" << toString(packetMode) << "packetType:" << static_cast<int>(packetType);
+                           << "actualFromPacket:" << toString(packetMode) << "packetType:" << static_cast<int>(event.packetType);
             }
         }
 
-        if (!context.hasHeader || !isAlternatingInfoWaveformPacket(packetType))
+        const bool hasHeader = event.packetType != EventPacketType::DetectronStatisticData && event.packetType != EventPacketType::Detectron2DData;
+        if (!hasHeader || !isAlternatingInfoWaveformPacket(event.packetType))
             return;
 
-        ChannelState &state = m_channelStates[context.channelId];
+        ChannelState &state = m_channelStates[event.channelId];
         if (packetMode != StreamMode::Unknown)
         {
             if (state.mode == StreamMode::Unknown)
                 state.mode = packetMode;
             else if (state.mode != packetMode)
             {
-                qWarning() << "[PARANOID][Contract] Channel mode deviation. channel:" << context.channelId
-                           << "expected:" << toString(state.mode) << "actual:" << toString(packetMode)
-                           << "packetType:" << static_cast<int>(packetType);
+                qWarning() << "[PARANOID][Contract] Channel mode deviation. channel:" << event.channelId << "expected:" << toString(state.mode)
+                           << "actual:" << toString(packetMode) << "packetType:" << static_cast<int>(event.packetType);
             }
         }
 
-        if ((state.mode == StreamMode::Psd && isPhaRelated(packetType)) || (state.mode == StreamMode::Pha && isPsdRelated(packetType)))
+        if ((state.mode == StreamMode::Psd && isPhaRelated(event.packetType)) || (state.mode == StreamMode::Pha && isPsdRelated(event.packetType)))
         {
-                qWarning() << "[PARANOID][Contract] Packet family mismatch with channel mode. channel:" << context.channelId
-                       << "mode:" << toString(state.mode) << "packetType:" << static_cast<int>(packetType);
+            qWarning() << "[PARANOID][Contract] Packet family mismatch with channel mode. channel:" << event.channelId
+                       << "mode:" << toString(state.mode) << "packetType:" << static_cast<int>(event.packetType);
         }
 
-        if (isPsdWaveform(packetType) || isPhaWaveform(packetType))
-            state.hasSeenWaveformOnChannel = true;
-
-        if (state.hasSeenWaveformOnChannel && state.lastPacketType.has_value() && *state.lastPacketType == packetType)
+        const bool isWaveform = isPsdWaveform(event.packetType) || isPhaWaveform(event.packetType);
+        if (isWaveform && state.lastPacketType.has_value() && *state.lastPacketType == event.packetType)
         {
-            qWarning() << "[PARANOID][Contract] Duplicate packet type for channel (protocol.h: PSD/PHA + Waveform, no two identical types in a row)."
-                       << "channel:" << context.channelId << "packetType:" << static_cast<int>(packetType);
+            qWarning() << "[PARANOID][Contract] Duplicate packet type for channel (two identical waveform packets in a row)."
+                       << "channel:" << event.channelId << "packetType:" << static_cast<int>(event.packetType);
         }
-        state.lastPacketType = packetType;
+        state.lastPacketType = event.packetType;
     }
 
-    void logOrphanWaveformPacket(const QSharedPointer<EventPacket> &waveformPacket) const
+    void logOrphanWaveform(quint16 channelId, quint64 rtc, EventPacketType packetType) const
     {
-        if (!waveformPacket)
+        if (packetType == EventPacketType::InterleavedWaveform || packetType == EventPacketType::SplitUpWaveform)
             return;
+        qInfo() << "[PARANOID][Contract] Orphan waveform packet without info. channel:" << channelId << "rtc:" << rtc
+                << "packetType:" << static_cast<int>(packetType);
+    }
 
-        const EventPacketHeader header = waveformPacket->header();
-        if (!shouldLogOrphanWaveform(header.packetType))
-            return;
-
-        qInfo() << "[PARANOID][Contract] Orphan waveform packet without info. channel:" << header.channelId << "rtc:" << header.rtc
-                << "packetType:" << static_cast<int>(header.packetType);
+    void reset() noexcept
+    {
+        m_channelStates.clear();
+        m_inferredMode = StreamMode::Unknown;
     }
 
   private:
-    static bool shouldLogOrphanWaveform(const EventPacketType packetType)
-    {
-        return packetType != EventPacketType::InterleavedWaveform && packetType != EventPacketType::SplitUpWaveform;
-    }
-
     enum class StreamMode
     {
         Unknown,
@@ -127,45 +130,12 @@ template <> class ContractChecks<ParsingMode::Paranoid>
     {
         StreamMode mode{StreamMode::Unknown};
         std::optional<EventPacketType> lastPacketType;
-        bool hasSeenWaveformOnChannel{false};
     };
-
-    struct ContractContext
-    {
-        bool hasHeader{false};
-        quint16 channelId{0};
-        std::optional<SpectrumType> spectrumType;
-    };
-
-    static ContractContext makeContractContext(const ParsedPacket &packet)
-    {
-        return std::visit(
-            []<typename T>(const std::shared_ptr<T> &ptr) -> ContractContext {
-                if (!ptr)
-                    return {};
-
-                ContractContext ctx{};
-                if constexpr (std::is_same_v<T, DetectronStatisticNetworkPacket> || std::is_same_v<T, Detectron2dNetworkPacket>)
-                {
-                    ctx.hasHeader = false;
-                }
-                else
-                {
-                    ctx.hasHeader = true;
-                    ctx.channelId = ptr->channelId;
-                }
-
-                if constexpr (std::is_same_v<T, DeviceSpectrum16> || std::is_same_v<T, DeviceSpectrum32>)
-                    ctx.spectrumType = static_cast<SpectrumType>(ptr->spectrumType);
-                return ctx;
-            },
-            packet);
-    }
 
     static bool isPsdInfo(const EventPacketType packetType)
     {
         return packetType == EventPacketType::PsdEventInfo || packetType == EventPacketType::PsdEventInfoV2 ||
-            packetType == EventPacketType::ReducedEventInfoPSD;
+               packetType == EventPacketType::ReducedEventInfoPSD;
     }
 
     static bool isPhaInfo(const EventPacketType packetType)
@@ -240,7 +210,6 @@ template <> class ContractChecks<ParsingMode::Paranoid>
         return "Unknown";
     }
 
-  private:
     std::map<quint16, ChannelState> m_channelStates;
     StreamMode m_inferredMode{StreamMode::Unknown};
 };

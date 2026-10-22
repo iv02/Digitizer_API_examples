@@ -1,14 +1,13 @@
 ﻿
+#include "settingitem.h"
+
 #include <QVariant>
 #include <vector>
 
 class QModelIndex;
-class QVariant;
 
 namespace client
 {
-
-struct SettingItem;
 
 class FwSettingsValidator
 {
@@ -21,7 +20,7 @@ class FwSettingsValidator
     static bool roundToStep(int &value, const QVariant &step) noexcept;
     static bool roundToStep(double &value, const QVariant &step) noexcept;
     static bool roundToDecimals(double &value, const QVariant &decimals) noexcept;
-    static bool resolveComboBoxValue(QVariant &value, const QVariantMap &values) noexcept;
+    static bool resolveComboBoxValue(QVariant &value, const ComboBoxValues &values) noexcept;
     static bool convertToBool(QVariant &value) noexcept;
 
     void setProcessValidationEnabled(bool enabled) noexcept;

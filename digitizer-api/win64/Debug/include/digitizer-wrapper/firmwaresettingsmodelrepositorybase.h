@@ -50,6 +50,7 @@ class FirmwareSettingsModelRepositoryBase : public QObject
     {
         bool isHasModels;
         std::map<QString, QSharedPointer<client::IAbstractSettingsModel>> models;
+        std::map<QString, QString> schemaTabNames;
     };
 
     std::map<int64_t, DeviceModelData> m_firmwareSettings;

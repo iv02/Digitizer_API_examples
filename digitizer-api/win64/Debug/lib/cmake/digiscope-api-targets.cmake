@@ -7,7 +7,7 @@ if(CMAKE_VERSION VERSION_LESS "2.8.12")
    message(FATAL_ERROR "CMake >= 2.8.12 required")
 endif()
 cmake_policy(PUSH)
-cmake_policy(VERSION 2.8.12...4.1)
+cmake_policy(VERSION 2.8.12...4.2)
 #----------------------------------------------------------------
 # Generated CMake target import file.
 #----------------------------------------------------------------
@@ -19,7 +19,7 @@ set(CMAKE_IMPORT_FILE_VERSION 1)
 set(_cmake_targets_defined "")
 set(_cmake_targets_not_defined "")
 set(_cmake_expected_targets "")
-foreach(_cmake_expected_target IN ITEMS digiscope-api::protobuf-api digiscope-api::event-packet digiscope-api::networker digiscope-api::configuration-io digiscope-api::muparser digiscope-api::digitizer-wrapper)
+foreach(_cmake_expected_target IN ITEMS digiscope-api::protobuf-api digiscope-api::event-packet digiscope-api::event-packet-adapter digiscope-api::networker digiscope-api::configuration-io digiscope-api::muparser digiscope-api::digitizer-wrapper)
   list(APPEND _cmake_expected_targets "${_cmake_expected_target}")
   if(TARGET "${_cmake_expected_target}")
     list(APPEND _cmake_targets_defined "${_cmake_expected_target}")
@@ -70,6 +70,7 @@ if(NOT CMAKE_VERSION VERSION_LESS "3.23.0")
       BASE_DIRS "${_IMPORT_PREFIX}/include/protobuf-api"
       FILES "${_IMPORT_PREFIX}/include/protobuf-api/api.pb.h" "${_IMPORT_PREFIX}/include/protobuf-api/api.grpc.pb.h"
   )
+
 else()
   set_property(TARGET digiscope-api::protobuf-api
     APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
@@ -91,12 +92,37 @@ if(NOT CMAKE_VERSION VERSION_LESS "3.23.0")
       FILE_SET "HEADERS"
       TYPE "HEADERS"
       BASE_DIRS "${_IMPORT_PREFIX}/include/event-packet"
-      FILES "${_IMPORT_PREFIX}/include/event-packet/measurement_data_pipeline.h" "${_IMPORT_PREFIX}/include/event-packet/parsing_mode.h" "${_IMPORT_PREFIX}/include/event-packet/event/contract_checks.h" "${_IMPORT_PREFIX}/include/event-packet/event/event_assembler.h" "${_IMPORT_PREFIX}/include/event-packet/event/split_up_assembler.h" "${_IMPORT_PREFIX}/include/event-packet/event/waveform_separator.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/data_parser.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetparser.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/parsed_packet.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/detectron2dnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/detectronstatisticnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/devicespectrum16.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/devicespectrum32.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/eventpackettype.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/phanetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/psdnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/psdnetworkpacketv2.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/reducedeventinfopacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/spectrumtype.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/waveformnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetwrappers/eventdata.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetwrappers/eventpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetwrappers/eventpacketbase.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetwrappers/eventpacketheader.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetwrappers/phaeventpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetwrappers/psdeventpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetwrappers/reducedinfoeventpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetwrappers/spectrumeventpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetwrappers/waveformeventpacket.h" "${_IMPORT_PREFIX}/include/event-packet/io/socket_reader.h" "${_IMPORT_PREFIX}/include/event-packet/sort/event_sorter.h"
+      FILES "${_IMPORT_PREFIX}/include/event-packet/measurement_data_pipeline.h" "${_IMPORT_PREFIX}/include/event-packet/parsing_mode.h" "${_IMPORT_PREFIX}/include/event-packet/event/contract_checks.h" "${_IMPORT_PREFIX}/include/event-packet/event/sort_grouper.h" "${_IMPORT_PREFIX}/include/event-packet/event/split_up_assembler.h" "${_IMPORT_PREFIX}/include/event-packet/event/waveform_separator.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/data_parser.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetparser.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/parsed_packet.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/detectron2dnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/detectronstatisticnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/devicespectrum16.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/devicespectrum32.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/eventpackettype.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/phanetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/psdnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/psdnetworkpacketv2.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/reducedeventinfopacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/spectrumtype.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packets/waveformnetworkpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetwrappers/eventdata.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetwrappers/eventpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetwrappers/eventpacketbase.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetwrappers/eventpacketheader.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetwrappers/phaeventpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetwrappers/psdeventpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetwrappers/reducedinfoeventpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetwrappers/spectrumeventpacket.h" "${_IMPORT_PREFIX}/include/event-packet/frameparse/packetwrappers/waveformeventpacket.h" "${_IMPORT_PREFIX}/include/event-packet/io/buffer_view.h" "${_IMPORT_PREFIX}/include/event-packet/io/socket_reader.h" "${_IMPORT_PREFIX}/include/event-packet/io/spsc_byte_ring.h" "${_IMPORT_PREFIX}/include/event-packet/model/event_group.h" "${_IMPORT_PREFIX}/include/event-packet/model/parsed_event.h" "${_IMPORT_PREFIX}/include/event-packet/model/payload_arena.h"
   )
+
 else()
   set_property(TARGET digiscope-api::event-packet
     APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
       "${_IMPORT_PREFIX}/include/event-packet"
+  )
+endif()
+
+# Create imported target digiscope-api::event-packet-adapter
+add_library(digiscope-api::event-packet-adapter STATIC IMPORTED)
+
+set_target_properties(digiscope-api::event-packet-adapter PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include/event-packet-adapter"
+  INTERFACE_LINK_LIBRARIES "Qt6::Core;digiscope-api::event-packet"
+)
+
+if(NOT CMAKE_VERSION VERSION_LESS "3.23.0")
+  target_sources(digiscope-api::event-packet-adapter
+    INTERFACE
+      FILE_SET "HEADERS"
+      TYPE "HEADERS"
+      BASE_DIRS "${_IMPORT_PREFIX}/include/event-packet-adapter"
+      FILES "${_IMPORT_PREFIX}/include/event-packet-adapter/event_group_converter.h"
+  )
+
+else()
+  set_property(TARGET digiscope-api::event-packet-adapter
+    APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+      "${_IMPORT_PREFIX}/include/event-packet-adapter"
   )
 endif()
 
@@ -105,7 +131,7 @@ add_library(digiscope-api::networker STATIC IMPORTED)
 
 set_target_properties(digiscope-api::networker PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include/networker"
-  INTERFACE_LINK_LIBRARIES "Qt6::Core;Qt6::Network;digiscope-api::event-packet;digiscope-api::protobuf-api"
+  INTERFACE_LINK_LIBRARIES "Qt6::Core;Qt6::Network;digiscope-api::event-packet;digiscope-api::event-packet-adapter;digiscope-api::protobuf-api"
 )
 
 if(NOT CMAKE_VERSION VERSION_LESS "3.23.0")
@@ -116,6 +142,7 @@ if(NOT CMAKE_VERSION VERSION_LESS "3.23.0")
       BASE_DIRS "${_IMPORT_PREFIX}/include/networker"
       FILES "${_IMPORT_PREFIX}/include/networker/commanddeviceconnector.h" "${_IMPORT_PREFIX}/include/networker/commandsupportflags.h" "${_IMPORT_PREFIX}/include/networker/maintainingdeviceconnector.h" "${_IMPORT_PREFIX}/include/networker/networkenums.h" "${_IMPORT_PREFIX}/include/networker/networkworker.h" "${_IMPORT_PREFIX}/include/networker/threaded.h"
   )
+
 else()
   set_property(TARGET digiscope-api::networker
     APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
@@ -139,6 +166,7 @@ if(NOT CMAKE_VERSION VERSION_LESS "3.23.0")
       BASE_DIRS "${_IMPORT_PREFIX}/include/configuration-io"
       FILES "${_IMPORT_PREFIX}/include/configuration-io/deviceconfigurationfile.h"
   )
+
 else()
   set_property(TARGET digiscope-api::configuration-io
     APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
@@ -162,6 +190,7 @@ if(NOT CMAKE_VERSION VERSION_LESS "3.23.0")
       BASE_DIRS "${_IMPORT_PREFIX}/include/muparser"
       FILES "${_IMPORT_PREFIX}/include/muparser/muParser.h" "${_IMPORT_PREFIX}/include/muparser/muParserBase.h" "${_IMPORT_PREFIX}/include/muparser/muParserBytecode.h" "${_IMPORT_PREFIX}/include/muparser/muParserCallback.h" "${_IMPORT_PREFIX}/include/muparser/muParserDef.h" "${_IMPORT_PREFIX}/include/muparser/muParserError.h" "${_IMPORT_PREFIX}/include/muparser/muParserFixes.h" "${_IMPORT_PREFIX}/include/muparser/muParserTemplateMagic.h" "${_IMPORT_PREFIX}/include/muparser/muParserToken.h" "${_IMPORT_PREFIX}/include/muparser/muParserTokenReader.h"
   )
+
 else()
   set_property(TARGET digiscope-api::muparser
     APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
@@ -185,6 +214,7 @@ if(NOT CMAKE_VERSION VERSION_LESS "3.23.0")
       BASE_DIRS "${_IMPORT_PREFIX}/include/digitizer-wrapper"
       FILES "${_IMPORT_PREFIX}/include/digitizer-wrapper/device.h" "${_IMPORT_PREFIX}/include/digitizer-wrapper/devicemanagerbase.h" "${_IMPORT_PREFIX}/include/digitizer-wrapper/devicemanagerwrapper.h" "${_IMPORT_PREFIX}/include/digitizer-wrapper/devicesettingsdefines.h" "${_IMPORT_PREFIX}/include/digitizer-wrapper/devicesettingstablemodel.h" "${_IMPORT_PREFIX}/include/digitizer-wrapper/devicestatemachine.h" "${_IMPORT_PREFIX}/include/digitizer-wrapper/digitizerinteractor.h" "${_IMPORT_PREFIX}/include/digitizer-wrapper/firmwaresettingsmodelrepositorybase.h" "${_IMPORT_PREFIX}/include/digitizer-wrapper/firmwaresettingstablemodel.h" "${_IMPORT_PREFIX}/include/digitizer-wrapper/fwsettingsvalidator.h" "${_IMPORT_PREFIX}/include/digitizer-wrapper/iabstractsettingsmodel.h" "${_IMPORT_PREFIX}/include/digitizer-wrapper/networkmediator.h" "${_IMPORT_PREFIX}/include/digitizer-wrapper/phashortfield.h" "${_IMPORT_PREFIX}/include/digitizer-wrapper/psdshortfield.h" "${_IMPORT_PREFIX}/include/digitizer-wrapper/settingdependency.h" "${_IMPORT_PREFIX}/include/digitizer-wrapper/settingdependencycontroller.h" "${_IMPORT_PREFIX}/include/digitizer-wrapper/settingitem.h" "${_IMPORT_PREFIX}/include/digitizer-wrapper/settingsstateproxymodel.h"
   )
+
 else()
   set_property(TARGET digiscope-api::digitizer-wrapper
     APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
