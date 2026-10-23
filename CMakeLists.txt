@@ -23,6 +23,10 @@ endif()
 set(DIGITIZER_API_EXAMPLES_API_ROOT "${_DIGITIZER_API_EXAMPLES_DEFAULT_API_ROOT}"
     CACHE PATH "Root directory of the prebuilt Digitizer API")
 
+option(DIGITIZER_API_EXAMPLES_ENABLE_HARDWARE_TESTS
+       "Build tests that require a connected digitizer device"
+       OFF)
+
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(_DIGITIZER_API_EXAMPLES_LIBS_VARIANT "debug")
 else()

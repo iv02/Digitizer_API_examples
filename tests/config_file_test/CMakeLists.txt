@@ -30,6 +30,7 @@ target_link_libraries(${PROJECT_NAME}
         Qt6::Test
         Qt6::Concurrent
         Qt6::StateMachine
+        digiscope-api::configuration-io
         digiscope-api::digitizer-wrapper
         digiscope-api::event-packet
 )
