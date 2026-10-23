@@ -1,36 +1,45 @@
 #pragma once
 
-#include <QByteArray>
-#include <QObject>
+#include "buffer_view.h"
+#include "spsc_byte_ring.h"
+
 #include <QTcpSocket>
 
-#include <memory>
-#include <mutex>
-#include <optional>
-#include <queue>
+#include <atomic>
 
 namespace network
 {
 
-class SocketReader : public QObject
+inline constexpr size_t kDefaultRingCapacity = 1ull * 1024ull * 1024ull * 1024ull;
+
+class SocketReader final : public QObject
 {
     Q_OBJECT
 
   signals:
-    void dataAvailable();
+    void dataAvailable(network::BufferView view);
 
   public:
-    explicit SocketReader(QObject *parent = nullptr);
-    ~SocketReader() override = default;
+    explicit SocketReader(size_t capacity = kDefaultRingCapacity, QObject *parent = nullptr);
+    ~SocketReader() override;
+
+    SocketReader(const SocketReader &) = delete;
+    SocketReader &operator=(const SocketReader &) = delete;
+
+    [[nodiscard]] size_t capacity() const noexcept;
+    [[nodiscard]] size_t available() const noexcept;
+    [[nodiscard]] bool isEmpty() const noexcept;
 
   public slots:
-    std::optional<std::shared_ptr<QByteArray>> tryTake();
-    bool isEmpty() const;
     void onDataReady(QTcpSocket *socket);
+    void clearTail(qsizetype bytes);
 
   private:
-    mutable std::mutex m_mutex;
-    std::queue<std::shared_ptr<QByteArray>> m_queue;
+    void drainSocket(QTcpSocket *socket);
+    void tryEmitAvailable();
+
+    SPSCByteRing m_ring;
+    std::atomic_bool m_leaseActive{false};
 };
 
 } // namespace network

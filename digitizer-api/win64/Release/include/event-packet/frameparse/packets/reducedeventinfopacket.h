@@ -11,25 +11,6 @@
 namespace network
 {
 
-/*
- * Binary format ReducedEventInfoPacket
- *
- * 4 byte - deviceId - Digitizer ID (Spacer)
- * 1 byte - packetType - Type packet depends on FPGA firmware type
- * 1 byte - flags - service information (for PSD - event overlaps)
- * 2 byte - channelId - For PSD/PHA is ID of channel, for Waveform bitmask of channels
- * 8 byte - rtc - timestamp
- *
- * 4 byte - length (array size) in number of 16 bit
- * 2 byte - part size in number of 16 bit
- * 2 byte - padding length
- * 2 byte[length] - waveform array
- * 2 byte - checksum
- * 2 byte[paddingLength] - padding to align by 8 byte
- *
- * TotalSize - multiple of 8 bytes (uint64_t)
- */
-
 struct ReducedEventInfoPacket
 {
     void deserialize(const QByteArrayView &in)
@@ -69,14 +50,11 @@ struct ReducedEventInfoPacket
     {
         return sizeof(uint16_t);
     }
-
-    //[HEADER]
     quint32 deviceId{};
     EventPacketType packetType{};
     quint8 flags{};
     quint16 channelId{};
     quint64 rtc{};
-    //[BODY]
     quint32 arrayLength{};
     quint16 partSize{};
     quint16 paddingLength{};

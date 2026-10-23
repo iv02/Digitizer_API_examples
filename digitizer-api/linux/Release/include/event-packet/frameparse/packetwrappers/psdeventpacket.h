@@ -10,7 +10,7 @@
 namespace network
 {
 
-class PsdEventPacket final : public EventPacket
+class PsdEventPacket : public EventPacket
 {
     Q_OBJECT
   public:

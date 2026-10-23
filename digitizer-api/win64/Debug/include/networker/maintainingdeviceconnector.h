@@ -1,6 +1,7 @@
 #pragma once
 
 #include "api.grpc.pb.h"
+#include "networkenums.h"
 
 #include <QDateTime>
 #include <QObject>
@@ -18,6 +19,7 @@ class MaintainingDeviceConnector : public QObject
   signals:
     void connectionEstablished(int64_t id);
     void connectionLost(int64_t id);
+    void deviceNetworkEvent(int64_t deviceId, NETWORK_DEVICE_EVENT event, QVariantList parameters) const;
 
   public:
     MaintainingDeviceConnector(QObject *parent = nullptr);

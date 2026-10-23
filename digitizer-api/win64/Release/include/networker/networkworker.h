@@ -1,7 +1,10 @@
 #pragma once
 
+#include "commanddeviceconnector.h"
 #include "frameparse/packets/eventpackettype.h"
 #include "frameparse/packetwrappers/eventdata.h"
+#include "maintainingdeviceconnector.h"
+#include "model/event_group.h"
 #include "networkenums.h"
 #include "threaded.h"
 
@@ -25,18 +28,10 @@ enum class DataSource;
 class SettingsRepository;
 } // namespace client
 
-namespace device
-{
-enum class DataType;
-}
-
 namespace network
 {
 class MeasurementDataPipeline;
-enum class EventPacketType : uint8_t;
 class EventPacket;
-class MaintainingDeviceConnector;
-class CommandDeviceConnector;
 
 class NetworkWorker final : public QObject
 {
@@ -50,14 +45,14 @@ class NetworkWorker final : public QObject
 
   public:
     NetworkWorker(std::optional<unsigned int> flushInterval = std::nullopt, QObject *parent = nullptr);
-    ~NetworkWorker() override = default;
+    ~NetworkWorker() override;
 
     void sendCommand(int64_t id, NETWORK_DEVICE_COMMAND command, const QVariantList &parameters);
 
   private slots:
     void onConnectionLost(int64_t id) noexcept;
     void onDiscoverLostTimeout() noexcept;
-    void onEventPairsReady(const std::vector<EventData> &pairs) const;
+    void onEventGroupsReady(const std::vector<EventGroup> &groups) const;
     void onCommandDeviceNetworkEvent(int64_t id, NETWORK_DEVICE_EVENT event, const QVariantList &parameters);
 
   private:

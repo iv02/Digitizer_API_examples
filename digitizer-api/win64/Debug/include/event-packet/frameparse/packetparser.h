@@ -1,9 +1,9 @@
 #pragma once
 
 #include "packets/eventpackettype.h"
+#include "parsing_mode.h"
 
 #include <QByteArrayView>
-#include <QDebug>
 
 #include <cstring>
 #include <expected>
@@ -29,10 +29,10 @@ inline quint16 calculateChecksum(const char *data, int size)
     const int wordsCnt = size / 2;
     const auto *buff = reinterpret_cast<const quint16 *>(data);
 
-    for (auto it = buff; it < buff + wordsCnt; it++)
-        checksum += *it;
+    for (auto it = buff; it < buff + wordsCnt; ++it)
+        checksum = static_cast<quint16>(checksum + *it);
 
-    return ~checksum;
+    return static_cast<quint16>(~checksum);
 }
 
 enum class EventError
@@ -110,7 +110,10 @@ concept UnknownSizeStructure = requires(T t) {
 template <typename T> class PacketParser final
 {
   public:
-    explicit PacketParser(EventPacketType packetType) : m_packetType(packetType)
+    using ParseFromBufferResult = std::expected<std::pair<std::shared_ptr<T>, int>, EventError>;
+
+    explicit PacketParser(EventPacketType packetType, ParsingMode parsingMode = ParsingMode::Normal)
+        : m_packetType(packetType), m_parsingMode(parsingMode)
     {
     }
 
@@ -120,28 +123,7 @@ template <typename T> class PacketParser final
     PacketParser &operator=(PacketParser &&) = delete;
     ~PacketParser() = default;
 
-    void setDeviceId(quint32 deviceId)
-    {
-        m_deviceId = deviceId;
-    }
-
-    using ParseResult = std::expected<std::shared_ptr<T>, EventError>;
-    using ParseFromBufferResult = std::expected<std::pair<std::shared_ptr<T>, int>, EventError>;
-
-    ParseResult parsePacket(QByteArrayView packetArray)
-    {
-        if constexpr (FixedSizeStructure<T>)
-            return parseFixedSizePacket(packetArray);
-        else if constexpr (KnownSizeStructure<T>)
-            return parseKnownSizePacket(packetArray);
-        else if constexpr (UnknownSizeStructure<T>)
-            return parseUnknownSizePacket(packetArray);
-        else
-        {
-            qWarning() << "Unsupported packet type for parsing. Expected FixedSizeStructure, KnownSizeStructure or UnknownSizeStructure.";
-            return std::unexpected(EventError::ParseError);
-        }
-    }
+    void setDeviceId(quint32 deviceId) { m_deviceId = deviceId; }
 
     ParseFromBufferResult parseFromBuffer(QByteArrayView bufferFromOffset)
     {
@@ -152,143 +134,11 @@ template <typename T> class PacketParser final
         else if constexpr (UnknownSizeStructure<T>)
             return parseUnknownSizeFromBuffer(bufferFromOffset);
         else
-        {
-            qWarning() << "Unsupported packet type for parsing. Expected FixedSizeStructure, KnownSizeStructure or UnknownSizeStructure.";
             return std::unexpected(EventError::ParseError);
-        }
     }
 
-    ParseResult parseFixedSizePacket(QByteArrayView packetArray)
-    {
-        if (packetArray.size() < static_cast<int>(T::size()))
-            return std::unexpected(EventError::NotEnoughBytes);
-
-        constexpr auto checksumSize = static_cast<int>(sizeof(quint16));
-        const auto checksum = calculateChecksum(packetArray.constData(), static_cast<int>(packetArray.size()) - checksumSize);
-
-        auto packet = std::make_shared<T>();
-        packet->deserialize(packetArray.sliced(0, static_cast<int>(T::size())));
-
-        if (packet->deviceId != m_deviceId)
-        {
-            qWarning() << "Invalid device ID in packet. Expected:" << m_deviceId << "Received:" << packet->deviceId;
-            qWarning() << "Packet array:" << packetArray.toByteArray().toHex();
-            return std::unexpected(EventError::InvalidDeviceId);
-        }
-
-        if (packet->packetType != m_packetType)
-        {
-            qWarning() << "Unsupported packet type. Expected:" << static_cast<int>(m_packetType) << "Received:" << static_cast<int>(packet->packetType);
-            qWarning() << "Packet array:" << packetArray.toByteArray().toHex();
-            return std::unexpected(EventError::UnsupportedPacketType);
-        }
-
-        if (packet->checksum != checksum)
-        {
-            qWarning() << "Checksum mismatch in packet. Expected:" << checksum << "Received:" << packet->checksum;
-            qWarning() << "Packet array:" << packetArray.toByteArray().toHex();
-            return std::unexpected(EventError::ChecksumMismatch);
-        }
-
-        return packet;
-    }
-
-    ParseResult parseKnownSizePacket(QByteArrayView packetArray)
-    {
-        if (packetArray.size() < static_cast<int>(T::fixedPartSize()))
-            return std::unexpected(EventError::NotEnoughBytes);
-
-        const auto arrayLength = readUnaligned<quint32>(packetArray.constData() + T::arrayLengthOffset());
-        const auto paddingLength = static_cast<quint32>(readUnaligned<quint16>(packetArray.constData() + T::paddingLengthOffset()));
-        const auto checksumBytes64 = static_cast<quint64>(T::fixedPartSize()) + static_cast<quint64>(arrayLength) * static_cast<quint64>(T::arrayItemSize());
-        const auto totalSize64 = checksumBytes64 + static_cast<quint64>(paddingLength) * sizeof(qint16) + sizeof(quint16);
-        if (totalSize64 > static_cast<quint64>(std::numeric_limits<int>::max()))
-            return std::unexpected(EventError::ParseError);
-
-        const auto totalSize = static_cast<int>(totalSize64);
-
-        if (packetArray.size() < totalSize)
-            return std::unexpected(EventError::NotEnoughBytes);
-
-        const auto checksum = calculateChecksum(packetArray.constData(), static_cast<int>(checksumBytes64));
-
-        auto packet = std::make_shared<T>();
-        packet->deserialize(packetArray.sliced(0, totalSize));
-
-        if (packet->deviceId != m_deviceId)
-        {
-            qWarning() << "Invalid device ID in packet. Expected:" << m_deviceId << "Received:" << packet->deviceId;
-            qWarning() << "Packet array:" << packetArray.toByteArray().toHex();
-            return std::unexpected(EventError::InvalidDeviceId);
-        }
-
-        if (packet->packetType != m_packetType)
-        {
-            qWarning() << "Unsupported packet type. Expected:" << static_cast<int>(m_packetType) << "Received:" << static_cast<int>(packet->packetType);
-            qWarning() << "Packet array:" << packetArray.toByteArray().toHex();
-            return std::unexpected(EventError::UnsupportedPacketType);
-        }
-
-        if (packet->checksum != checksum)
-        {
-            qWarning() << "Checksum mismatch in packet. Expected:" << checksum << "Received:" << packet->checksum;
-            qWarning() << "Packet array:" << packetArray.toByteArray().toHex();
-            return std::unexpected(EventError::ChecksumMismatch);
-        }
-
-        return packet;
-    }
-
-    ParseResult parseUnknownSizePacket(QByteArrayView packetArray)
-    {
-        if (packetArray.size() < static_cast<int>(T::fixedPartSize()))
-            return std::unexpected(EventError::NotEnoughBytes);
-
-        const auto sig = T::signature();
-
-        for (quint32 xyCounter = 0; xyCounter < T::arrayLimit(); ++xyCounter)
-        {
-            const auto mayBeSignaturePos = T::fixedPartSize() + xyCounter * T::arrayPartSize();
-            const auto mayBePacketEnd = mayBeSignaturePos + static_cast<int>(sig.size()) + static_cast<int>(sizeof(quint16));
-            if (packetArray.size() < mayBePacketEnd)
-                return std::unexpected(EventError::NotEnoughBytes);
-
-            if (packetArray.sliced(mayBeSignaturePos, sig.size()) != sig)
-                continue;
-
-            constexpr auto checksumSize = static_cast<int>(sizeof(quint16));
-            const auto checksum = calculateChecksum(packetArray.constData(), mayBePacketEnd - checksumSize);
-
-            auto packet = std::make_shared<T>();
-            packet->deserialize(packetArray.sliced(0, mayBePacketEnd), xyCounter);
-
-            if (packet->deviceId != m_deviceId)
-            {
-                qWarning() << "Invalid device ID in packet. Expected:" << m_deviceId << "Received:" << packet->deviceId;
-                qWarning() << "Packet array:" << packetArray.toByteArray().toHex();
-                return std::unexpected(EventError::InvalidDeviceId);
-            }
-
-            if (packet->packetType != m_packetType)
-            {
-                qWarning() << "Unsupported packet type. Expected:" << static_cast<int>(m_packetType) << "Received:" << static_cast<int>(packet->packetType);
-                qWarning() << "Packet array:" << packetArray.toByteArray().toHex();
-                return std::unexpected(EventError::UnsupportedPacketType);
-            }
-
-            if (packet->checksum != checksum)
-            {
-                qWarning() << "Checksum mismatch in packet. Expected:" << checksum << "Received:" << packet->checksum;
-                qWarning() << "Packet array:" << packetArray.toByteArray().toHex();
-                return std::unexpected(EventError::ChecksumMismatch);
-            }
-
-            return packet;
-        }
-
-        qWarning() << "No valid packet found in buffer. Device ID:" << m_deviceId << "Packet type:" << static_cast<int>(m_packetType);
-        return std::unexpected(EventError::ParseError);
-    }
+  private:
+    [[nodiscard]] bool verifyChecksum() const noexcept { return m_parsingMode == ParsingMode::Paranoid; }
 
     ParseFromBufferResult parseFixedSizeFromBuffer(QByteArrayView bufferFromOffset)
     {
@@ -296,10 +146,24 @@ template <typename T> class PacketParser final
         if (bufferFromOffset.size() < totalSize)
             return std::unexpected(EventError::NotEnoughBytes);
 
-        auto parsed = parseFixedSizePacket(bufferFromOffset.sliced(0, totalSize));
-        if (!parsed.has_value())
-            return std::unexpected(parsed.error());
-        return std::make_pair(std::move(*parsed), totalSize);
+        const char *data = bufferFromOffset.constData();
+        if (verifyChecksum())
+        {
+            const auto expected = calculateChecksum(data, totalSize - static_cast<int>(sizeof(quint16)));
+            const auto actual = readUnaligned<quint16>(data + totalSize - static_cast<int>(sizeof(quint16)));
+            if (actual != expected)
+                return std::unexpected(EventError::ChecksumMismatch);
+        }
+
+        auto packet = std::make_shared<T>();
+        packet->deserialize(bufferFromOffset.sliced(0, totalSize));
+
+        if (packet->deviceId != m_deviceId)
+            return std::unexpected(EventError::InvalidDeviceId);
+        if (packet->packetType != m_packetType)
+            return std::unexpected(EventError::UnsupportedPacketType);
+
+        return std::make_pair(std::move(packet), totalSize);
     }
 
     ParseFromBufferResult parseKnownSizeFromBuffer(QByteArrayView bufferFromOffset)
@@ -307,22 +171,35 @@ template <typename T> class PacketParser final
         if (bufferFromOffset.size() < static_cast<int>(T::fixedPartSize()))
             return std::unexpected(EventError::NotEnoughBytes);
 
-        const auto arrayLength = readUnaligned<quint32>(bufferFromOffset.constData() + T::arrayLengthOffset());
-        const auto paddingLength = static_cast<quint32>(readUnaligned<quint16>(bufferFromOffset.constData() + T::paddingLengthOffset()));
-        const auto totalSize64 = static_cast<quint64>(T::fixedPartSize()) + static_cast<quint64>(arrayLength) * static_cast<quint64>(T::arrayItemSize()) +
-                                 static_cast<quint64>(paddingLength) * sizeof(qint16) + sizeof(quint16);
+        const char *data = bufferFromOffset.constData();
+        const auto arrayLength = readUnaligned<quint32>(data + T::arrayLengthOffset());
+        const auto paddingLength = static_cast<quint32>(readUnaligned<quint16>(data + T::paddingLengthOffset()));
+        const auto checksumBytes64 = static_cast<quint64>(T::fixedPartSize()) + static_cast<quint64>(arrayLength) * static_cast<quint64>(T::arrayItemSize());
+        const auto totalSize64 = checksumBytes64 + static_cast<quint64>(paddingLength) * sizeof(qint16) + sizeof(quint16);
         if (totalSize64 > static_cast<quint64>(std::numeric_limits<int>::max()))
             return std::unexpected(EventError::ParseError);
 
         const int totalSize = static_cast<int>(totalSize64);
-
         if (bufferFromOffset.size() < totalSize)
             return std::unexpected(EventError::NotEnoughBytes);
 
-        auto parsed = parseKnownSizePacket(bufferFromOffset.sliced(0, totalSize));
-        if (!parsed.has_value())
-            return std::unexpected(parsed.error());
-        return std::make_pair(std::move(*parsed), totalSize);
+        if (verifyChecksum())
+        {
+            const auto expected = calculateChecksum(data, static_cast<int>(checksumBytes64));
+            const auto actual = readUnaligned<quint16>(data + static_cast<int>(checksumBytes64));
+            if (actual != expected)
+                return std::unexpected(EventError::ChecksumMismatch);
+        }
+
+        auto packet = std::make_shared<T>();
+        packet->deserialize(bufferFromOffset.sliced(0, totalSize));
+
+        if (packet->deviceId != m_deviceId)
+            return std::unexpected(EventError::InvalidDeviceId);
+        if (packet->packetType != m_packetType)
+            return std::unexpected(EventError::UnsupportedPacketType);
+
+        return std::make_pair(std::move(packet), totalSize);
     }
 
     ParseFromBufferResult parseUnknownSizeFromBuffer(QByteArrayView bufferFromOffset)
@@ -331,6 +208,7 @@ template <typename T> class PacketParser final
             return std::unexpected(EventError::NotEnoughBytes);
 
         const auto sig = T::signature();
+        const char *data = bufferFromOffset.constData();
 
         for (quint32 xyCounter = 0; xyCounter < T::arrayLimit(); ++xyCounter)
         {
@@ -339,27 +217,34 @@ template <typename T> class PacketParser final
             if (bufferFromOffset.size() < mayBePacketEnd)
                 return std::unexpected(EventError::NotEnoughBytes);
 
-            if (bufferFromOffset.sliced(mayBeSignaturePos, sig.size()) != sig)
+            if (std::memcmp(data + mayBeSignaturePos, sig.constData(), static_cast<size_t>(sig.size())) != 0)
                 continue;
 
-            auto parsed = parseUnknownSizePacket(bufferFromOffset.sliced(0, mayBePacketEnd));
-            if (!parsed.has_value())
-                return std::unexpected(parsed.error());
-            return std::make_pair(std::move(*parsed), mayBePacketEnd);
+            if (verifyChecksum())
+            {
+                const auto expected = calculateChecksum(data, mayBePacketEnd - static_cast<int>(sizeof(quint16)));
+                const auto actual = readUnaligned<quint16>(data + mayBePacketEnd - static_cast<int>(sizeof(quint16)));
+                if (actual != expected)
+                    return std::unexpected(EventError::ChecksumMismatch);
+            }
+
+            auto packet = std::make_shared<T>();
+            packet->deserialize(bufferFromOffset.sliced(0, mayBePacketEnd), xyCounter);
+
+            if (packet->deviceId != m_deviceId)
+                return std::unexpected(EventError::InvalidDeviceId);
+            if (packet->packetType != m_packetType)
+                return std::unexpected(EventError::UnsupportedPacketType);
+
+            return std::make_pair(std::move(packet), mayBePacketEnd);
         }
 
-        qWarning() << "No valid packet found in buffer. Device ID:" << m_deviceId << "Packet type:" << static_cast<int>(m_packetType);
         return std::unexpected(EventError::ParseError);
     }
 
-    EventPacketType packetType() const
-    {
-        return m_packetType;
-    }
-
-  private:
     quint32 m_deviceId{};
     EventPacketType m_packetType{};
+    ParsingMode m_parsingMode{ParsingMode::Normal};
 };
 
 } // namespace network

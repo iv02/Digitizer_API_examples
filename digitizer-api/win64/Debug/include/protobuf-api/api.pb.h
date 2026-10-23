@@ -3071,8 +3071,26 @@ class PingResponse final : public ::google::protobuf::Message
 
   // accessors -------------------------------------------------------
   enum : int {
+    kErrorDescriptionFieldNumber = 3,
     kConfirmFieldNumber = 1,
+    kErrorCodeFieldNumber = 2,
   };
+  // string errorDescription = 3;
+  void clear_errordescription() ;
+  const std::string& errordescription() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_errordescription(Arg_&& arg, Args_... args);
+  std::string* mutable_errordescription();
+  PROTOBUF_NODISCARD std::string* release_errordescription();
+  void set_allocated_errordescription(std::string* value);
+
+  private:
+  const std::string& _internal_errordescription() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_errordescription(
+      const std::string& value);
+  std::string* _internal_mutable_errordescription();
+
+  public:
   // .ConfirmType confirm = 1;
   void clear_confirm() ;
   ::ConfirmType confirm() const;
@@ -3083,13 +3101,23 @@ class PingResponse final : public ::google::protobuf::Message
   void _internal_set_confirm(::ConfirmType value);
 
   public:
+  // uint32 errorCode = 2;
+  void clear_errorcode() ;
+  ::uint32_t errorcode() const;
+  void set_errorcode(::uint32_t value);
+
+  private:
+  ::uint32_t _internal_errorcode() const;
+  void _internal_set_errorcode(::uint32_t value);
+
+  public:
   // @@protoc_insertion_point(class_scope:PingResponse)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      0, 1, 0,
-      0, 2>
+      2, 3, 0,
+      37, 2>
       _table_;
 
   static constexpr const void* _raw_default_instance_ =
@@ -3109,7 +3137,9 @@ class PingResponse final : public ::google::protobuf::Message
     inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
                           ::google::protobuf::Arena* arena, const Impl_& from,
                           const PingResponse& from_msg);
+    ::google::protobuf::internal::ArenaStringPtr errordescription_;
     int confirm_;
+    ::uint32_t errorcode_;
     mutable ::google::protobuf::internal::CachedSize _cached_size_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
@@ -5904,6 +5934,7 @@ class ConnectRequest final : public ::google::protobuf::Message
     kSoftwareIdFieldNumber = 2,
     kTimestampFieldNumber = 1,
     kPortDataFieldNumber = 3,
+    kCurrentTimestampMksFieldNumber = 4,
   };
   // string softwareId = 2;
   void clear_softwareid() ;
@@ -5941,12 +5972,22 @@ class ConnectRequest final : public ::google::protobuf::Message
   void _internal_set_port_data(::uint32_t value);
 
   public:
+  // uint64 currentTimestampMks = 4;
+  void clear_currenttimestampmks() ;
+  ::uint64_t currenttimestampmks() const;
+  void set_currenttimestampmks(::uint64_t value);
+
+  private:
+  ::uint64_t _internal_currenttimestampmks() const;
+  void _internal_set_currenttimestampmks(::uint64_t value);
+
+  public:
   // @@protoc_insertion_point(class_scope:ConnectRequest)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      2, 3, 0,
+      2, 4, 0,
       33, 2>
       _table_;
 
@@ -5970,6 +6011,7 @@ class ConnectRequest final : public ::google::protobuf::Message
     ::google::protobuf::internal::ArenaStringPtr softwareid_;
     ::uint32_t timestamp_;
     ::uint32_t port_data_;
+    ::uint64_t currenttimestampmks_;
     mutable ::google::protobuf::internal::CachedSize _cached_size_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
@@ -7168,6 +7210,78 @@ inline void PingResponse::_internal_set_confirm(::ConfirmType value) {
   _impl_.confirm_ = value;
 }
 
+// uint32 errorCode = 2;
+inline void PingResponse::clear_errorcode() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.errorcode_ = 0u;
+}
+inline ::uint32_t PingResponse::errorcode() const {
+  // @@protoc_insertion_point(field_get:PingResponse.errorCode)
+  return _internal_errorcode();
+}
+inline void PingResponse::set_errorcode(::uint32_t value) {
+  _internal_set_errorcode(value);
+  // @@protoc_insertion_point(field_set:PingResponse.errorCode)
+}
+inline ::uint32_t PingResponse::_internal_errorcode() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.errorcode_;
+}
+inline void PingResponse::_internal_set_errorcode(::uint32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.errorcode_ = value;
+}
+
+// string errorDescription = 3;
+inline void PingResponse::clear_errordescription() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.errordescription_.ClearToEmpty();
+}
+inline const std::string& PingResponse::errordescription() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:PingResponse.errorDescription)
+  return _internal_errordescription();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void PingResponse::set_errordescription(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.errordescription_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:PingResponse.errorDescription)
+}
+inline std::string* PingResponse::mutable_errordescription() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_errordescription();
+  // @@protoc_insertion_point(field_mutable:PingResponse.errorDescription)
+  return _s;
+}
+inline const std::string& PingResponse::_internal_errordescription() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.errordescription_.Get();
+}
+inline void PingResponse::_internal_set_errordescription(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.errordescription_.Set(value, GetArena());
+}
+inline std::string* PingResponse::_internal_mutable_errordescription() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.errordescription_.Mutable( GetArena());
+}
+inline std::string* PingResponse::release_errordescription() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:PingResponse.errorDescription)
+  return _impl_.errordescription_.Release();
+}
+inline void PingResponse::set_allocated_errordescription(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.errordescription_.SetAllocated(value, GetArena());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        if (_impl_.errordescription_.IsDefault()) {
+          _impl_.errordescription_.Set("", GetArena());
+        }
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:PingResponse.errorDescription)
+}
+
 // -------------------------------------------------------------------
 
 // ProtocolVersionRequest
@@ -7432,6 +7546,28 @@ inline ::uint32_t ConnectRequest::_internal_port_data() const {
 inline void ConnectRequest::_internal_set_port_data(::uint32_t value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.port_data_ = value;
+}
+
+// uint64 currentTimestampMks = 4;
+inline void ConnectRequest::clear_currenttimestampmks() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.currenttimestampmks_ = ::uint64_t{0u};
+}
+inline ::uint64_t ConnectRequest::currenttimestampmks() const {
+  // @@protoc_insertion_point(field_get:ConnectRequest.currentTimestampMks)
+  return _internal_currenttimestampmks();
+}
+inline void ConnectRequest::set_currenttimestampmks(::uint64_t value) {
+  _internal_set_currenttimestampmks(value);
+  // @@protoc_insertion_point(field_set:ConnectRequest.currentTimestampMks)
+}
+inline ::uint64_t ConnectRequest::_internal_currenttimestampmks() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.currenttimestampmks_;
+}
+inline void ConnectRequest::_internal_set_currenttimestampmks(::uint64_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.currenttimestampmks_ = value;
 }
 
 // -------------------------------------------------------------------
